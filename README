@@ -1,6 +1,7 @@
 This tool synchronizes Git and CVS repositories in an asynchronous
 fashion.
 
+* It will not touch the CVS trunk (at least for now).
 * It exports branches in Git into branches in CVS.
 * It imports brances from CVS into special import branches (with names
   starting with "cvs-" in Git.

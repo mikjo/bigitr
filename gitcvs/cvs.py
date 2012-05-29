@@ -80,7 +80,7 @@ class CVS(object):
         fd, name = tempfile.mkstemp('.gitcvs')
         os.write(fd, message)
         try:
-            shell.run(self.log, 'cvs', 'commit', '-R', '-F', name)
+            shell.run(self.log, 'cvs', 'commit', '-r', self.branch, '-R', '-F', name)
         finally:
             os.remove(name)
             os.close(fd)

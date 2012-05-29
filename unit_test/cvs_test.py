@@ -136,6 +136,6 @@ class TestCVS(unittest.TestCase):
                     mockos['write'].assert_called_once_with(123456789, 'commitMessage')
                     mockmkstemp.assert_called_once_with('.gitcvs')
                     shell.run.assert_called_once_with(mock.ANY,
-                        'cvs', 'commit', '-R', '-F', '/notThere')
+                        'cvs', 'commit', '-r', 'brnch', '-R', '-F', '/notThere')
                     mockos['remove'].assert_called_once_with('/notThere')
                     mockos['close'].assert_called_once_with(123456789)
