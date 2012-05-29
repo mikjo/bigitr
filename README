@@ -1,0 +1,23 @@
+This tool synchronizes Git and CVS repositories in an asynchronous
+fashion.
+
+* It exports branches in Git into branches in CVS.
+* It imports brances from CVS into special import branches (with names
+  starting with "cvs-" in Git.
+* It is the developer's responsibility to merge changes from the
+  special cvs-* import branches into appropriate development branches.
+* Branches in the Git repositories with names starting with "cvs-"
+  and "export-" are reserved to be written only by this tool.
+
+There are two kinds of configuration files.
+* Application configuration: general behavior
+* Repository configuration: specific to a Git repository
+
+This tool depends on precise behavior of Git and CVS, and on the "-i"
+option to sed.  The behavior of this tool should be validated after
+ANY update to any of the programs which it calls: git, cvs, and sed,
+as well as after any other update that might affect them (libraries,
+system language configuration, etc.).  A test suite is provided to
+help validate this behavior.  If you discover failures not exposed by
+the test suite, please augment the test suite.  In particular,
+additional functional tests or story tests would be appropriate.
