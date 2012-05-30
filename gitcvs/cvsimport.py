@@ -31,7 +31,8 @@ class Importer(object):
         os.chdir(repoDir)
         # clean up after any garbage left over from previous runs so
         # that we can change branches
-        Git.reset()
+        if Git.refs():
+            Git.reset()
         addSkeleton = False
         branches = Git.branches()
         if gitbranch not in branches:
@@ -55,9 +56,9 @@ class Importer(object):
             pass
             #FIXME
         os.chdir(repoDir)
-        git.infoStatus()
-        git.infoDiff()
-        git.addAll()
+        Git.infoStatus()
+        Git.infoDiff()
+        Git.addAll()
         # FIXME: try to create a commit message that includes all
         # the CVS commit messages since the previous commit, de-duplicated
-        git.commit('import from CVS as of %s' %time.asctime())
+        Git.commit('import from CVS as of %s' %time.asctime())

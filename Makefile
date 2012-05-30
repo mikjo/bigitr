@@ -13,9 +13,9 @@ func:
 	#PYTHONPATH=. nosetests --with-coverage --cover-package gitcvs -s func_test/
 
 story:
-	#PYTHONPATH=. nosetests --with-coverage --cover-package gitcvs -s story_test/
+	PYTHONPATH=. BASEDIR=$$(pwd) nosetests --with-coverage --cover-package gitcvs -s story_test/
 
 alltests:
-	PYTHONPATH=. nosetests --with-coverage --cover-package gitcvs -s
+	PYTHONPATH=. BASEDIR=$$(pwd) nosetests --with-coverage --cover-package gitcvs -s
 
 tests: unit func story

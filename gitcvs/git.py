@@ -16,7 +16,17 @@ class Git(object):
     def branches(self):
         _, branches = shell.read(self.log,
             'git', 'branch', '-a')
-        return set(x[2:].split()[0] for x in branches.strip().split('\n'))
+        if branches:
+            return set(x[2:].split()[0] for x in branches.strip().split('\n'))
+        return set()
+
+    def refs(self):
+        # no refs yet returns an error in normal operations
+        rc, refs = shell.read(self.log,
+            'git', 'show-ref', error=False)
+        if not rc:
+            return [tuple(x.split()) for x in refs.strip().split('\n')]
+        return None
 
     def newBranch(self, branch):
         shell.run(self.log, 'git', 'branch', branch)
@@ -31,7 +41,8 @@ class Git(object):
 
     def checkoutNewImportBranch(self, branch):
         shell.run(self.log, 'git', 'checkout', '--orphan', branch)
-        shell.run(self.log, 'git', 'rm', '-rf', '.')
+        # this command will fail for initial checkins with no files
+        shell.run(self.log, 'git', 'rm', '-rf', '.', error=False)
 
     def checkout(self, branch):
         shell.run(self.log, 'git', 'checkout', branch)

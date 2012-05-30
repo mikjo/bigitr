@@ -42,6 +42,43 @@ class TestGit(unittest.TestCase):
                 'remotes/origin/master',
             )))
 
+    def test_branchesNone(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, '')
+            branches = self.git.branches()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'branch', '-a')
+            self.assertEquals(branches, set())
+
+
+    def test_refs(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, '''
+a44dfd94fd9de6c27f739274f2fae99ab83fa2f5 refs/heads/master
+fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/HEAD
+fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
+''')
+            refs = self.git.refs()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'show-ref', error=False)
+            self.assertEquals(refs, [
+                ('a44dfd94fd9de6c27f739274f2fae99ab83fa2f5',
+                 'refs/heads/master'),
+                ('fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201',
+                 'refs/remotes/origin/HEAD'),
+                ('fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201',
+                 'refs/remotes/origin/master')
+            ])
+
+    def test_refsNone(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (1, '')
+            refs = self.git.refs()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'show-ref', error=False)
+            self.assertEquals(refs, None)
+
+
     def test_newBranch(self):
         with mock.patch('gitcvs.git.shell.run'):
             self.git.newBranch('b')
