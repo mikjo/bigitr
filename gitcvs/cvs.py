@@ -34,19 +34,28 @@ class CVS(object):
     def setEnvironment(self):
         os.environ['CVSROOT'] = self.root
 
-    def listContentFiles(self):
+    def listFiles(self, path):
         allfiles = []
-        dirlen = len(self.path) + 1
-        for root, dirs, files in os.walk(self.path):
+        dirlen = len(path) + 1
+        for root, dirs, files in os.walk(path):
             if 'CVS' in dirs:
                 dirs.remove('CVS') 
             allfiles.extend(['/'.join((root, x))[dirlen:] for x in files])
         return allfiles
 
+    def listContentFiles(self):
+        return self.listFiles(self.path)
+
     @setCVSROOT
     def export(self, targetDir):
         shell.run(self.log,
             'cvs', 'export', '-d', targetDir, '-r', self.branch, self.location)
+
+    def cleanKeywords(self, fileList):
+        shell.run(self.log,
+            'sed', '-i', '-r',
+            r's/\$(Author|Date|Header|Id|Name|Locker|RCSfile|Revision|Source|State):[^\$]*\$/$\1$/g',
+            *fileList)
 
     @setCVSROOT
     def checkout(self):

@@ -71,6 +71,12 @@ class TestCVS(unittest.TestCase):
             self.assertEqual(os.environ['CVSROOT'],
                 self.ctx.getCVSRoot('repo', 'johndoe'))
 
+    def test_cleanKeywords(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.cvs.cleanKeywords(['a'])
+            shell.run.assert_called_once_with(mock.ANY,
+                'sed', '-i', '-r', mock.ANY, 'a')
+
     def test_checkout(self):
         with mock.patch('gitcvs.git.shell.run'):
             self.cvs.checkout()

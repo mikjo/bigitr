@@ -59,8 +59,11 @@ class Importer(object):
             os.remove(filename)
 
         os.chdir(gitDir)
+        ignoreFiles = set(CVS.listFiles(repoName))
         CVS.export(repoName)
-        #FIXME: add $CVSID$ scrubbing
+        exportedFiles = set('/'.join((repoName, x))
+                            for x in set(CVS.listFiles(repoName)) - ignoreFiles)
+        CVS.cleanKeywords(sorted(list(exportedFiles)))
         if addSkeleton:
             pass
             #FIXME

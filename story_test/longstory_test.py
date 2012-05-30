@@ -363,3 +363,53 @@ class TestStory(unittest.TestCase):
         self.assertEqual(
             len(set([x[0] for x in Git.refs() if 'master' in x[1]])),
             1)
+
+    def test_lowlevel5(self):
+        'test cvs keyword demangling'
+        self.unpack('TESTROOT.5.tar.gz')
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/keywords', 'w').write('''
+            $Author$
+            $Date$
+            $Header$
+            $Id$
+            $Name$
+            $Locker$
+            $RCSfile$
+            $Revision$
+            $Source$
+            $State$
+''')
+        os.system('cd %s/module1; '
+                  'cvs add keywords; '
+                  'cvs commit -m "add keywords"'
+                  %self.cvsco)
+        keywords = file(self.cvsco + '/module1/keywords').read()
+        self.assertTrue('$Author:' in keywords)
+        self.assertTrue('$Date:' in keywords)
+        self.assertTrue('$Header:' in keywords)
+        self.assertTrue('$Id:' in keywords)
+        self.assertTrue('$Name:' in keywords)
+        self.assertTrue('$Locker:' in keywords)
+        self.assertTrue('$RCSfile:' in keywords)
+        self.assertTrue('$Revision:' in keywords)
+        self.assertTrue('$Source:' in keywords)
+        self.assertTrue('$State:' in keywords)
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        keywords = file(self.gitdir + '/module1/keywords').read()
+        self.assertTrue('$Author$' in keywords)
+        self.assertTrue('$Date$' in keywords)
+        self.assertTrue('$Header$' in keywords)
+        self.assertTrue('$Id$' in keywords)
+        self.assertTrue('$Name$' in keywords)
+        self.assertTrue('$Locker$' in keywords)
+        self.assertTrue('$RCSfile$' in keywords)
+        self.assertTrue('$Revision$' in keywords)
+        self.assertTrue('$Source$' in keywords)
+        self.assertTrue('$State$' in keywords)
