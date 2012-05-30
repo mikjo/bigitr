@@ -103,8 +103,6 @@ class TestCVS(unittest.TestCase):
                 self.assertEqual(os.chdir.call_count, 2)
                 os.chdir.assert_any_call(os.getcwd())
                 os.chdir.assert_any_call('%s/repo/brnch/Loc' %self.cdir)
-                self.assertEqual(os.environ['CVSROOT'],
-                    self.ctx.getCVSRoot('repo', 'johndoe'))
 
     def test_copyFiles(self):
         os.makedirs(self.dir+'/dir')

@@ -8,6 +8,7 @@ from gitcvs import cvsimport, context, git, cvs
 
 class TestCVSImportStory(unittest.TestCase):
     def setUp(self):
+        self.oldcwd = os.getcwd()
         # for config
         self.logdir = tempfile.mkdtemp(suffix='.log.gitcvs')
         self.gitdir = tempfile.mkdtemp(suffix='.git.gitcvs')
@@ -46,6 +47,8 @@ class TestCVSImportStory(unittest.TestCase):
                                 self.gitroot)
                              )
         self.ctx = context.Context(appConfig, repConfig)
+        self.getCVSRoot = self.ctx.getCVSRoot
+        self.getGitRef = self.ctx.getGitRef
         self.ctx.getCVSRoot = mock.Mock()
         self.ctx.getCVSRoot.return_value = self.cvsroot
         self.ctx.getGitRef = lambda(a): '/'.join((self.gitroot, a))
@@ -60,6 +63,7 @@ class TestCVSImportStory(unittest.TestCase):
         os.removedirs(dir)
 
     def tearDown(self):
+        os.chdir(self.oldcwd)
         self.removeRecursive(self.logdir)
         self.removeRecursive(self.gitdir)
         self.removeRecursive(self.cvsdir)
@@ -70,6 +74,8 @@ class TestCVSImportStory(unittest.TestCase):
             os.environ['CVSROOT'] = self.oldcvsroot
         else:
             os.unsetenv('CVSROOT')
+        self.ctx.getCVSRoot = self.getCVSRoot
+        self.ctx.getGitRef = self.getGitRef
 
     def test_lowlevel(self):
         imp = cvsimport.Importer(self.ctx, 'johndoe')
