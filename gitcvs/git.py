@@ -7,14 +7,24 @@ class Git(object):
         self.log = self.ctx.logs[repo]
 
     def clone(self, uri):
-        return shell.run(self.log,
-            'git', 'clone', uri)
+        return shell.run(self.log, 'git', 'clone', uri)
+
+    def fetch(self):
+        return shell.run(self.log, 'git', 'fetch', '--all')
 
     def reset(self):
         shell.run(self.log, 'git', 'reset', '--hard', 'HEAD')
 
     def clean(self):
         shell.run(self.log, 'git', 'clean', '--force', '-x')
+
+    def pristine(self):
+        if self.status():
+            self.clean()
+            refs = self.refs()
+            if refs:
+                if 'HEAD' in (x[1] for x in refs):
+                    self.reset()
 
     def branches(self):
         _, branches = shell.read(self.log,
@@ -85,6 +95,9 @@ class Git(object):
 
     def addAll(self):
         shell.run(self.log, 'git', 'add', '-A', '.')
+
+    def mergeFastForward(self, branch):
+        shell.run(self.log, 'git', 'merge', '--ff', '--ff-only', branch)
 
     def mergeIgnore(self, branch):
         shell.run(self.log, 'git', 'merge', '--strategy=ours', '--ff',

@@ -95,7 +95,8 @@ class TestCVS(unittest.TestCase):
     def test_deleteFiles(self):
         with mock.patch('gitcvs.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,
-                                           chdir=mock.DEFAULT):
+                                           chdir=mock.DEFAULT,
+                                           remove=mock.DEFAULT):
                 self.cvs.deleteFiles(['/a', '/b/c', '/b/d'])
                 shell.run.assert_called_once_with(mock.ANY,
                     'cvs', 'remove', '/a', '/b/c', '/b/d')
@@ -103,6 +104,21 @@ class TestCVS(unittest.TestCase):
                 self.assertEqual(os.chdir.call_count, 2)
                 os.chdir.assert_any_call(os.getcwd())
                 os.chdir.assert_any_call('%s/repo/brnch/Loc' %self.cdir)
+                self.assertEqual(os.remove.call_count, 3)
+                os.remove.assert_has_calls([
+                    mock.call('/a'),
+                    mock.call('/b/c'),
+                    mock.call('/b/d'),
+                ])
+
+    def test_deleteFilesEmpty(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            with mock.patch.multiple('os', getcwd=mock.DEFAULT,
+                                           chdir=mock.DEFAULT,
+                                           remove=mock.DEFAULT):
+                self.cvs.deleteFiles([])
+                self.assertFalse(shell.run.called)
+                self.assertFalse(os.remove.called)
 
     def test_copyFiles(self):
         os.makedirs(self.dir+'/dir')
@@ -117,11 +133,21 @@ class TestCVS(unittest.TestCase):
         self.assertEqual(file(self.cdir + '/repo/brnch/Loc/b').read(), 'b')
         self.assertEqual(file(self.cdir + '/repo/brnch/Loc/dir/metoo').read(), 'metoo')
 
+    def test_copyFilesEmpty(self):
+        with mock.patch('os.path.exists'):
+            self.cvs.copyFiles('/ignore', [])
+            self.assertFalse(os.path.exists.called)
+
     def test_addFiles(self):
         with mock.patch('gitcvs.git.shell.run'):
             self.cvs.addFiles(['/a', '/b', '/dir/metoo'])
             shell.run.assert_called_once_with(mock.ANY,
                 'cvs', 'add', '/a', '/b', '/dir/metoo')
+
+    def test_addFilesEmpty(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.cvs.addFiles([])
+            self.assertFalse(shell.run.called)
 
     def test_commit(self):
         with mock.patch('gitcvs.git.shell.run'):

@@ -40,12 +40,7 @@ class Importer(object):
         os.chdir(repoDir)
         # clean up after any garbage left over from previous runs so
         # that we can change branches
-        if Git.status():
-            Git.clean()
-            refs = Git.refs()
-            if refs:
-                if 'HEAD' in (x[1] for x in refs):
-                    Git.reset()
+        Git.pristine()
         addSkeleton = False
         branches = Git.branches()
         if gitbranch not in branches:

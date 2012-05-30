@@ -20,6 +20,12 @@ class TestGit(unittest.TestCase):
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'clone', uri)
 
+    def test_fetch(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.git.fetch()
+            shell.run.assert_called_once_with(mock.ANY,
+                'git', 'fetch', '--all')
+
     def test_reset(self):
         with mock.patch('gitcvs.git.shell.run'):
             self.git.reset()
@@ -31,6 +37,19 @@ class TestGit(unittest.TestCase):
             self.git.clean()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'clean', '--force', '-x')
+
+    def test_pristine(self):
+        with mock.patch.multiple(self.git, status=mock.DEFAULT,
+                                        clean=mock.DEFAULT,
+                                        refs=mock.DEFAULT,
+                                        reset=mock.DEFAULT) as mockgit:
+            mockgit['status'].return_value = True
+            mockgit['refs'].return_value = [('ignore', 'HEAD')]
+            self.git.pristine()
+            mockgit['status'].assert_called_once_with()
+            mockgit['clean'].assert_called_once_with()
+            mockgit['refs'].assert_called_once_with()
+            mockgit['reset'].assert_called_once_with()
 
     def test_branches(self):
         with mock.patch('gitcvs.git.shell.read') as r:
@@ -204,6 +223,12 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.git.addAll()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'add', '-A', '.')
+
+    def test_mergeFastForward(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.git.mergeFastForward('brnch')
+            shell.run.assert_called_once_with(mock.ANY,
+                'git', 'merge', '--ff', '--ff-only', 'brnch')
 
     def test_mergeIgnore(self):
         with mock.patch('gitcvs.git.shell.run'):

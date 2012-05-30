@@ -4,26 +4,30 @@ import os
 import tempfile
 import unittest
 
-from gitcvs import cvsimport, context, git, cvs
+from gitcvs import cvsimport, gitexport, context, git, cvs
 
 class TestStory(unittest.TestCase):
     def setUp(self):
         self.oldcwd = os.getcwd()
         self.workdir = tempfile.mkdtemp(suffix='.gitcvs')
-        # for config
+        # config directories
         self.logdir = self.workdir + '/log'
         os.makedirs(self.logdir)
         self.gitdir = self.workdir + '/git'
         os.makedirs(self.gitdir)
         self.cvsdir = self.workdir + '/cvs'
         os.makedirs(self.cvsdir)
+        # outside the system: the "server" directories
         self.cvsroot = self.workdir + '/cvsroot'
         os.makedirs(self.cvsroot)
-        # outside the system
         self.gitroot = self.workdir + '/gitroot'
         os.makedirs(self.gitroot + '/git')
+        # outside the system: the "checkout" directories
         self.cvsco = self.workdir + '/cvsco'
         os.makedirs(self.cvsco)
+        self.gitco = self.workdir + '/gitco'
+        os.makedirs(self.gitco)
+
         if 'CVSROOT' in os.environ:
             self.oldcvsroot = os.environ['CVSROOT']
         else:
@@ -47,6 +51,7 @@ class TestStory(unittest.TestCase):
                              'cvs.b2 = b2\n'
                              'git.master = b2\n'
                              'git.b1 = b1\n'
+                             'prefix.b1 = SOME FIXED STRING\n'
                              '[git/module2]\n'
                              'cvspath = module2\n'
                              'cvs.b1 = b1\n'
@@ -93,6 +98,7 @@ class TestStory(unittest.TestCase):
                       %(self.workdir, tarball))
 
     def test_lowlevel1(self):
+        'test initial import process'
         self.unpack('TESTROOT.1.tar.gz')
         imp = cvsimport.Importer(self.ctx, 'johndoe')
         Git = git.Git(self.ctx, 'git/module1')
@@ -286,5 +292,74 @@ class TestStory(unittest.TestCase):
         file('%s/module1/transient' %self.gitdir, 'w')
         imp.importcvs('git/module1', Git, CVS, 'b1', 'cvs-b1')
         self.assertFalse(os.path.exists(self.gitdir + '/module1/transient'))
-
         # do not need to pack anything, since no changes have been made
+
+    def test_lowlevel4BadGitBranch(self):
+        'test error on specifying unknown git source branch'
+        self.unpack('TESTROOT.4.tar.gz')
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVS = cvs.CVS(self.ctx, 'git/module1', 'b1', exp.username)
+        self.assertRaises(KeyError, exp.exportgit,
+            'git/module1', Git, CVS, 'wRoNgBrAnCh', 'export-yuck')
+        # do not need to pack anything, since no changes have been made
+
+    def test_lowlevel4(self):
+        'test exporting git branch changes to cvs'
+        self.unpack('TESTROOT.4.tar.gz')
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+        # really need to work in a separate checkout to make sure that
+        # we pull changes
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  'git merge origin/cvs-b1; '
+                  'mkdir newdir; '
+                  'git mv b1.2 newdir; '
+                  'git commit -a -m "moved b1.2 to newdir"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
+        self.assertTrue('SOME FIXED STRING' in
+                        file(self.cvsroot+'/module1/Attic/b1.2,v').read())
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        os.system('cd %s/module1; '
+                  'git fetch; '
+                  'git merge origin/cvs-b1 -m "merge cvs-b1 to b1"; '
+                  'git checkout master; '
+                  'git merge b1 -m "merge cvs-b1 to master"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
+        os.system('cd %s/module1; '
+                  'git fetch; '
+                  'git checkout master; '
+                  'touch added-on-git-master; '
+                  'git add added-on-git-master; '
+                  'git commit -m "add added-on-git-master"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
+        self.assertFalse('SOME FIXED STRING' in
+                        file(self.cvsroot+'/module1/Attic/added-on-git-master,v').read())
+        self.assertTrue('    add added-on-git-master' in
+                        file(self.cvsroot+'/module1/Attic/added-on-git-master,v').read())
+        imp.importcvs('git/module1', Git, CVSb2, 'b2', 'cvs-b2')
+        os.system('cd %s/module1; '
+                  'git fetch; '
+                  'git checkout master; '
+                  'git merge origin/cvs-b2 -m "merge cvs-b2 to master"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
+        self.pack('TESTROOT.5.tar.gz')
+
+        os.chdir(self.gitdir + '/module1')
+        # all branches with "master" in the name now point to the same hash:
+        self.assertEqual(
+            len(set([x[0] for x in Git.refs() if 'master' in x[1]])),
+            1)

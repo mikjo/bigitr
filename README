@@ -3,10 +3,11 @@ fashion.
 
 * It will not touch the CVS trunk (at least for now).
 * It exports branches in Git into branches in CVS.
-* It imports brances from CVS into special import branches (with names
+* It imports branches from CVS into special import branches (with names
   starting with "cvs-" in Git.
 * It is the developer's responsibility to merge changes from the
   special cvs-* import branches into appropriate development branches.
+  (May later optionally attempt automated merges with additional config.)
 * Branches in the Git repositories with names starting with "cvs-"
   and "export-" are reserved to be written only by this tool.
 
@@ -22,3 +23,9 @@ system language configuration, etc.).  A test suite is provided to
 help validate this behavior.  If you discover failures not exposed by
 the test suite, please augment the test suite.  In particular,
 additional functional tests or story tests would be appropriate.
+This tool automates only (part of) the PROCESS of synchronization
+between Git and CVS branches.  It does not automate any MONITORING
+of the results.  Do not relax monitoring because you are using it.
+For example, if you have changemail notification on CVS, do not disable
+it for branches that are developed in Git and pushed to CVS; use that
+changemail to confirm that the synchronization process has worked.

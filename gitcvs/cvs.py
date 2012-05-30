@@ -59,7 +59,10 @@ class CVS(object):
 
     @inCVSROOT
     def deleteFiles(self, fileNames):
-        shell.run(self.log, 'cvs', 'remove', *fileNames)
+        if fileNames:
+            for fileName in fileNames:
+                os.remove(fileName)
+            shell.run(self.log, 'cvs', 'remove', *fileNames)
 
     def copyFiles(self, sourceDir, fileNames):
         'call addFiles for any files being added rather than updated'
@@ -73,7 +76,8 @@ class CVS(object):
 
     @inCVSROOT
     def addFiles(self, fileNames):
-        shell.run(self.log, 'cvs', 'add', *fileNames)
+        if fileNames:
+            shell.run(self.log, 'cvs', 'add', *fileNames)
 
     @inCVSROOT
     def commit(self, message):
