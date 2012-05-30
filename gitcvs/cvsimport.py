@@ -16,7 +16,7 @@ class Importer(object):
             self.importBranches(repository, Git)
 
     def importBranches(self, repository, Git):
-        for cvsbranch, gitbranch in self.repositorymap.getImportBranchMaps():
+        for cvsbranch, gitbranch in self.ctx.getImportBranchMaps(repository):
             CVS = cvs.CVS(self.ctx, repository, cvsbranch, self.username)
             self.importcvs(repository, Git, CVS, cvsbranch, gitbranch)
 
