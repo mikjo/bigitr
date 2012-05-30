@@ -12,7 +12,7 @@
 # prefix.<branch> = <message> # prefix for CVS commit messages on <branch>
 # email = <address> <address> # errors/warnings emailed to these addresses
 #
-# gitroot, cvsroot, and skeleton may be in a GLOBAL section, which
+# gitroot, cvsroot, email, and skeleton may be in a GLOBAL section, which
 # will be overridden by any specific per-repository values.
 #
 # For each git.<branch>, "export-<branch>" in Git is used to track what
@@ -93,6 +93,7 @@ class RepositoryConfig(config.Config):
                  if x.startswith('git.')]
 
     def getEmail(self, repository):
-        if self.has_option(repository, 'email'):
-            return self.get(repository, 'email').split()
+        email = self.getDefault(repository, 'email', error=False)
+        if email:
+            return email.split()
         return None

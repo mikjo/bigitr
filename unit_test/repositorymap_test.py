@@ -1,6 +1,6 @@
 import ConfigParser
 import os
-from StringIO import StringIO
+from cStringIO import StringIO
 import tempfile
 import unittest
 
@@ -116,6 +116,14 @@ git.master = a2
                          ['foo@bar', 'baz@blah'])
 
     def test_getEmailDefault(self):
+        cfg = repositorymap.RepositoryConfig(StringIO('''
+[GLOBAL]
+email = foo@bar
+[repo]
+        '''))
+        self.assertEqual(cfg.getEmail('repo'), ['foo@bar'])
+
+    def test_getEmailNone(self):
         self.assertEqual(self.cfg.getEmail('Path/To/Git/repo2'),
                          None)
 
