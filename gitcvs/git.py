@@ -17,8 +17,16 @@ class Git(object):
         _, branches = shell.read(self.log,
             'git', 'branch', '-a')
         if branches:
-            return set(x[2:].split()[0] for x in branches.strip().split('\n'))
+            return set(x[2:].split()[0] for x in branches.split('\n') if x)
         return set()
+
+    def branch(self):
+        _, branches = shell.read(self.log,
+            'git', 'branch')
+        if branches:
+            return [x.split()[1]
+                    for x in branches.strip().split('\n')
+                    if x.startswith('* ')][0]
 
     def refs(self):
         # no refs yet returns an error in normal operations
@@ -53,6 +61,11 @@ class Git(object):
         # --exclude-standard does not apply to .gitignore or .gitmodules
         return [x for x in files.split('\0') if x and not '.git' in x]
 
+    def status(self):
+        _, output = shell.read(self.log,
+            'git', 'status', '--porcelain')
+        return output
+
     def infoStatus(self):
         shell.run(self.log, 'git', 'status')
 
@@ -68,7 +81,7 @@ class Git(object):
                       '--patch', '--minimal', '--irreversible-delete')
 
     def addAll(self):
-        shell.run(self.log, 'git', 'add', '.')
+        shell.run(self.log, 'git', 'add', '-A', '.')
 
     def mergeIgnore(self, branch):
         shell.run(self.log, 'git', 'merge', '--strategy=ours', '--ff',

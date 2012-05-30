@@ -44,7 +44,8 @@ class Importer(object):
                 Git.checkoutNewImportBranch(gitbranch)
                 addSkeleton = True
         else:
-            Git.checkout(gitbranch)
+            if Git.branch() != gitbranch:
+                Git.checkout(gitbranch)
 
         for filename in Git.listContentFiles():
             os.remove(filename)
@@ -56,9 +57,12 @@ class Importer(object):
             pass
             #FIXME
         os.chdir(repoDir)
-        Git.infoStatus()
-        Git.infoDiff()
-        Git.addAll()
-        # FIXME: try to create a commit message that includes all
-        # the CVS commit messages since the previous commit, de-duplicated
-        Git.commit('import from CVS as of %s' %time.asctime())
+        if Git.status():
+            # there is some change to commit
+            Git.infoStatus()
+            Git.infoDiff()
+            Git.addAll()
+            # FIXME: try to create a commit message that includes all
+            # the CVS commit messages since the previous commit, de-duplicated
+            Git.commit('import from CVS as of %s' %time.asctime())
+            Git.push('origin', gitbranch)

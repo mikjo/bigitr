@@ -50,6 +50,27 @@ class TestGit(unittest.TestCase):
                 'git', 'branch', '-a')
             self.assertEquals(branches, set())
 
+    def test_branch(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, '''
+* master
+  other
+''')
+            branch = self.git.branch()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'branch')
+            self.assertEquals(branch, 'master')
+
+    def test_branchOther(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, '''
+  master
+* other
+''')
+            branch = self.git.branch()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'branch')
+            self.assertEquals(branch, 'other')
 
     def test_refs(self):
         with mock.patch('gitcvs.git.shell.read') as r:
@@ -123,6 +144,26 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
                 'git', 'ls-files', '--exclude-standard', '-z')
             self.assertEquals(files, ['foo', 'bar/baz'])
 
+    def test_statusEmpty(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, '')
+            status = self.git.status()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'status', '--porcelain')
+            self.assertEquals(status, '')
+
+    def test_status(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, ''' M gitcvs/cvsimport.py
+ M gitcvs/git.py
+''')
+            status = self.git.status()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'status', '--porcelain')
+            self.assertEquals(status, ''' M gitcvs/cvsimport.py
+ M gitcvs/git.py
+''')
+
     def test_infoStatus(self):
         with mock.patch('gitcvs.git.shell.run'):
             self.git.infoStatus()
@@ -156,7 +197,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
         with mock.patch('gitcvs.git.shell.run'):
             self.git.addAll()
             shell.run.assert_called_once_with(mock.ANY,
-                'git', 'add', '.')
+                'git', 'add', '-A', '.')
 
     def test_mergeIgnore(self):
         with mock.patch('gitcvs.git.shell.run'):
