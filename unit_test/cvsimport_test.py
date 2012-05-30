@@ -4,9 +4,9 @@ from StringIO import StringIO
 import tempfile
 import unittest
 
-from gitcvs import cvsimport, appconfig, context
+from gitcvs import cvsimport, context
 
-class TestConfig(unittest.TestCase):
+class CVSImportTest(unittest.TestCase):
     def setUp(self):
         self.username = 'janedoe'
         with mock.patch('gitcvs.log.Log') as mocklog:
