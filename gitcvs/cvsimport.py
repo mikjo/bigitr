@@ -27,18 +27,31 @@ class Importer(object):
         if not os.path.exists(repoDir):
             os.chdir(gitDir)
             Git.clone(self.ctx.getGitRef(repository))
+            os.chdir(repoDir)
+            refs = Git.refs()
+            if not refs:
+                # master branch needs to exist
+                # FIXME: if skeleton, add skeleton; else empty .gitignore
+                file('/'.join((repoDir, '.gitignore')), 'w')
+                Git.addAll()
+                Git.commit('create new empty master branch')
+                Git.push('origin', 'master')
 
         os.chdir(repoDir)
         # clean up after any garbage left over from previous runs so
         # that we can change branches
-        if Git.refs():
-            Git.reset()
+        if Git.status():
+            Git.clean()
+            refs = Git.refs()
+            if refs:
+                if 'HEAD' in (x[1] for x in refs):
+                    Git.reset()
         addSkeleton = False
         branches = Git.branches()
         if gitbranch not in branches:
             if 'remotes/origin/' + gitbranch in branches:
                 # check out existing remote branch
-                Git.checkoutTracking('origin/'+gitbranch)
+                Git.checkoutTracking(gitbranch)
             else:
                 # check out a new "orphan" branch
                 Git.checkoutNewImportBranch(gitbranch)

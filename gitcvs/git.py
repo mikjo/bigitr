@@ -13,6 +13,9 @@ class Git(object):
     def reset(self):
         shell.run(self.log, 'git', 'reset', '--hard', 'HEAD')
 
+    def clean(self):
+        shell.run(self.log, 'git', 'clean', '--force', '-x')
+
     def branches(self):
         _, branches = shell.read(self.log,
             'git', 'branch', '-a')
@@ -31,7 +34,7 @@ class Git(object):
     def refs(self):
         # no refs yet returns an error in normal operations
         rc, refs = shell.read(self.log,
-            'git', 'show-ref', error=False)
+            'git', 'show-ref', '--head', error=False)
         if not rc:
             return [tuple(x.split()) for x in refs.strip().split('\n')]
         return None
