@@ -19,7 +19,7 @@ class Git(object):
         shell.run(self.log, 'git', 'clean', '--force', '-x')
 
     def pristine(self):
-        if self.status():
+        if self.statusIgnored():
             self.clean()
             refs = self.refs()
             if refs:
@@ -77,6 +77,11 @@ class Git(object):
     def status(self):
         _, output = shell.read(self.log,
             'git', 'status', '--porcelain')
+        return output
+
+    def statusIgnored(self):
+        _, output = shell.read(self.log,
+            'git', 'status', '--porcelain', '--ignored')
         return output
 
     def infoStatus(self):

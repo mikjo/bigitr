@@ -44,9 +44,6 @@ class Importer(object):
                 Git.push('origin', 'master')
 
         os.chdir(repoDir)
-        # clean up after any garbage left over from previous runs so
-        # that we can change branches
-        Git.pristine()
         addSkeleton = False
         branches = Git.branches()
         if gitbranch not in branches:
@@ -60,6 +57,10 @@ class Importer(object):
         else:
             if Git.branch() != gitbranch:
                 Git.checkout(gitbranch)
+
+        # clean up after any garbage left over from previous runs so
+        # that we can change branches
+        Git.pristine()
 
         for filename in Git.listContentFiles():
             os.remove(filename)
@@ -86,3 +87,7 @@ class Importer(object):
             # the CVS commit messages since the previous commit, de-duplicated
             Git.commit('import from CVS as of %s' %time.asctime())
             Git.push('origin', gitbranch)
+
+        # Status can report clean with .gitignored files existing
+        # Remove any .gitignored files added by the "cvs export"
+        Git.pristine()

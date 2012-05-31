@@ -196,9 +196,17 @@ class TestStory(unittest.TestCase):
         os.system('git init --bare %s/git/module2' %self.gitroot)
         imp.importcvs('git/module2', Gitm2, CVSm2, 'b1', 'cvs-b1')
         self.assertTrue(os.path.exists(self.gitdir + '/module2/1'))
+        # ensure that files get cleaned up
+        self.assertFalse(os.path.exists(self.gitdir + '/module2/bad.jar'))
         self.assertEqual(file(self.gitdir + '/module2/.gitignore').read(),
             '*.jar\n*.o\n')
+        # OK, we have all we need for the next test
         self.pack('TESTROOT.2.tar.gz')
+
+        # make sure that a stray file is cleaned up where necessary
+        file('%s/module2/bad.jar' %self.gitdir, 'w')
+        imp.importcvs('git/module2', Gitm2, CVSm2, 'b1', 'cvs-b1')
+        self.assertFalse(os.path.exists(self.gitdir + '/module2/bad.jar'))
 
     def test_lowlevel2(self):
         'test updating multiple branches in multiple repositories together'

@@ -39,14 +39,14 @@ class TestGit(testutils.TestCase):
                 'git', 'clean', '--force', '-x')
 
     def test_pristine(self):
-        with mock.patch.multiple(self.git, status=mock.DEFAULT,
+        with mock.patch.multiple(self.git, statusIgnored=mock.DEFAULT,
                                         clean=mock.DEFAULT,
                                         refs=mock.DEFAULT,
                                         reset=mock.DEFAULT) as mockgit:
-            mockgit['status'].return_value = True
+            mockgit['statusIgnored'].return_value = True
             mockgit['refs'].return_value = [('ignore', 'HEAD')]
             self.git.pristine()
-            mockgit['status'].assert_called_once_with()
+            mockgit['statusIgnored'].assert_called_once_with()
             mockgit['clean'].assert_called_once_with()
             mockgit['refs'].assert_called_once_with()
             mockgit['reset'].assert_called_once_with()
@@ -188,6 +188,27 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEquals(status, ''' M gitcvs/cvsimport.py
  M gitcvs/git.py
 ''')
+
+    def test_statusIgnoredEmpty(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, '')
+            status = self.git.statusIgnored()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'status', '--porcelain', '--ignored')
+            self.assertEquals(status, '')
+
+    def test_statusIgnored(self):
+        with mock.patch('gitcvs.git.shell.read') as r:
+            r.return_value = (0, ''' M gitcvs/cvsimport.py
+ M gitcvs/git.py
+''')
+            status = self.git.statusIgnored()
+            r.assert_called_once_with(mock.ANY,
+                'git', 'status', '--porcelain', '--ignored')
+            self.assertEquals(status, ''' M gitcvs/cvsimport.py
+ M gitcvs/git.py
+''')
+
 
     def test_infoStatus(self):
         with mock.patch('gitcvs.git.shell.run'):

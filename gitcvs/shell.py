@@ -30,12 +30,11 @@ class LoggingShell(subprocess.Popen):
         finish = '%s COMPLETE with return code: %d\n' %(ts, retcode)
         os.write(self.log.stderr, finish)
         os.write(self.log.stdout, finish)
-        if retcode:
-            logging.error(self.log.thiserr)
+        if retcode and self.error:
             for line in open(self.log.thiserr):
                 logging.error(line)
-            if self.error:
-                raise ValueError('Unexpected return code %d' %retcode)
+            logging.error(self.log.thiserr)
+            raise ValueError('Unexpected return code %d' %retcode)
         return retcode
 
 def run(log, *args, **kwargs):

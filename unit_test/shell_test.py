@@ -87,8 +87,7 @@ logdir = %s
         self.assertEqual(len(files), 2)
         sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
         self.assertTrue(0 not in sizes)
-        self.assertTrue(' COMPLETE with return code: 1\n'
-                        in self.logdata.getvalue())
+        self.assertEqual(self.logdata.getvalue(), '')
         self.logdata.truncate(0)
 
     def test_ErrorOutput(self):
@@ -108,8 +107,7 @@ logdir = %s
             self.assertEqual(len(nonLogLines), 0)
             self.assertTrue(
                 logLines[-1].endswith(' COMPLETE with return code: 1\n'))
-        self.assertTrue(' COMPLETE with return code: 1\n'
-                        in self.logdata.getvalue())
+        self.assertEqual(self.logdata.getvalue(), '')
         self.logdata.truncate(0)
 
     def test_RaiseError(self):
@@ -117,18 +115,24 @@ logdir = %s
         s = shell.LoggingShell(l, 'false')
         self.assertRaises(ValueError, s.wait)
         l.close()
+        self.assertTrue(' COMPLETE with return code: 1\n'
+                        in self.logdata.getvalue())
         self.logdata.truncate(0)
 
     def test_runRaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         self.assertRaises(ValueError, shell.run, l, 'false')
         l.close()
+        self.assertTrue(' COMPLETE with return code: 1\n'
+                        in self.logdata.getvalue())
         self.logdata.truncate(0)
 
     def test_readRaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         self.assertRaises(ValueError, shell.read, l, 'false')
         l.close()
+        self.assertTrue(' COMPLETE with return code: 1\n'
+                        in self.logdata.getvalue())
         self.logdata.truncate(0)
 
     def test_run(self):
@@ -145,8 +149,7 @@ logdir = %s
             self.assertEqual(len(nonLogLines), 0)
             self.assertTrue(
                 logLines[-1].endswith(' COMPLETE with return code: 1\n'))
-        self.assertTrue(' COMPLETE with return code: 1\n'
-                        in self.logdata.getvalue())
+        self.assertEqual(self.logdata.getvalue(), '')
         self.logdata.truncate(0)
         
     def test_readWithData(self):
