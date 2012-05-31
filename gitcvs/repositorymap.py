@@ -15,6 +15,12 @@
 # gitroot, cvsroot, email, and skeleton may be in a GLOBAL section, which
 # will be overridden by any specific per-repository values.
 #
+# skeleton files are used only when creating a new cvs-* import branch.
+# Note that changing the skeleton between creating cvs-* import branches
+# will introduce merge conflicts when you merge cvs-* branches into
+# Git development branches.  Any skeleton files other than .gitignore
+# will be included in the files exported from Git branches to CVS branches.
+#
 # For each git.<branch>, "export-<branch>" in Git is used to track what
 # on <branch> has been exported to CVS.  This branch never has anything
 # committed to it.  It only gets fast-forward merges from <branch>.  It

@@ -2,6 +2,8 @@ import os
 import shell
 import tempfile
 
+from gitcvs import util
+
 # One CVS checkout per branch, because CVS switches branches slowly/poorly,
 # so there is one CVS object per branch, not per repository.
 # No checkout directory is created for exporting
@@ -75,13 +77,7 @@ class CVS(object):
 
     def copyFiles(self, sourceDir, fileNames):
         'call addFiles for any files being added rather than updated'
-        for fileName in fileNames:
-            sourceFile = '/'.join((sourceDir, fileName))
-            targetFile = '/'.join((self.path, fileName))
-            targetDir = os.path.dirname(targetFile)
-            if not os.path.exists(targetDir):
-                os.makedirs(targetDir)
-            file(targetFile, 'w').write(file(sourceFile).read())
+        util.copyFiles(sourceDir, self.path, fileNames)
 
     @inCVSROOT
     def addFiles(self, fileNames):

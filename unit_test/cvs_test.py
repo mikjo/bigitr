@@ -2,11 +2,11 @@ from cStringIO import StringIO
 import mock
 import os
 import tempfile
-import unittest
+import testutils
 
-from gitcvs import cvs, shell, context
+from gitcvs import cvs, shell, context, util
 
-class TestCVS(unittest.TestCase):
+class TestCVS(testutils.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp(suffix='.gitcvs')
         self.cdir = tempfile.mkdtemp(suffix='.gitcvs')
@@ -29,15 +29,6 @@ class TestCVS(unittest.TestCase):
             self.ctx = context.Context(appConfig, repConfig)
             self.cvs = cvs.CVS(self.ctx, 'repo', 'brnch', 'johndoe')
             self.mocklog = mocklog()
-
-    @staticmethod
-    def removeRecursive(dir):
-        for b, dirs, files in os.walk(dir, topdown=False):
-            for f in files:
-                os.remove('/'.join((b, f)))
-            for d in dirs:
-                os.rmdir('/'.join((b, d)))
-        os.removedirs(dir)
 
     def tearDown(self):
         self.removeRecursive(self.dir)
@@ -127,17 +118,10 @@ class TestCVS(unittest.TestCase):
                 self.assertFalse(os.remove.called)
 
     def test_copyFiles(self):
-        os.makedirs(self.dir+'/dir')
-        file(self.dir+'/a', 'w').write('a')
-        file(self.dir+'/b', 'w').write('b')
-        file(self.dir+'/dir/metoo', 'w').write('metoo')
-        self.cvs.copyFiles(self.dir, ['/a', '/b', '/dir/metoo'])
-        self.assertTrue(os.path.exists(self.cdir + '/repo/brnch/Loc/a'))
-        self.assertTrue(os.path.exists(self.cdir + '/repo/brnch/Loc/b'))
-        self.assertTrue(os.path.exists(self.cdir + '/repo/brnch/Loc/dir/metoo'))
-        self.assertEqual(file(self.cdir + '/repo/brnch/Loc/a').read(), 'a')
-        self.assertEqual(file(self.cdir + '/repo/brnch/Loc/b').read(), 'b')
-        self.assertEqual(file(self.cdir + '/repo/brnch/Loc/dir/metoo').read(), 'metoo')
+        with mock.patch('gitcvs.util.copyFiles'):
+            fileList = ['/a', '/b', '/dir/metoo']
+            self.cvs.copyFiles(self.dir, fileList)
+            util.copyFiles.assertCalled(self.dir, self.cvs.path, fileList)
 
     def test_copyFilesEmpty(self):
         with mock.patch('os.path.exists'):

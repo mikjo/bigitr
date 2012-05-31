@@ -2,11 +2,11 @@ import mock
 import os
 from StringIO import StringIO
 import tempfile
-import unittest
+import testutils
 
 from gitcvs import cvsimport, context
 
-class CVSImportTest(unittest.TestCase):
+class CVSImportTest(testutils.TestCase):
     def setUp(self):
         self.username = 'janedoe'
         with mock.patch('gitcvs.log.Log') as mocklog:

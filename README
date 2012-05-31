@@ -1,15 +1,22 @@
 This tool synchronizes Git and CVS repositories in an asynchronous
 fashion.
 
-* It will not touch the CVS trunk (at least for now).
 * It exports branches in Git into branches in CVS.
 * It imports branches from CVS into special import branches (with names
   starting with "cvs-" in Git.
 * It is the developer's responsibility to merge changes from the
   special cvs-* import branches into appropriate development branches.
   (May later optionally attempt automated merges with additional config.)
+* It will not touch the CVS trunk (at least for now).
 * Branches in the Git repositories with names starting with "cvs-"
   and "export-" are reserved to be written only by this tool.
+  These branches are pushed to the origin repository so that local
+  state does not need to be maintained.  This means that multiple
+  users can run this tool using the same repository configuration
+  but different application configuration (local directories).
+  However, no locking is attempted, so if two users run it at the
+  same time, the results are undefined.
+* This tool commits to CVS and pushes to remove Git repositories.
 
 There are two kinds of configuration files.
 * Application configuration: general behavior
@@ -29,3 +36,9 @@ of the results.  Do not relax monitoring because you are using it.
 For example, if you have changemail notification on CVS, do not disable
 it for branches that are developed in Git and pushed to CVS; use that
 changemail to confirm that the synchronization process has worked.
+
+This tool also assumes essentially unlimited argument length, as it
+passes arbitrarily many file names on the command line.  This limits
+it to working on relatively recent Linux kernels (2.6.23 and later)
+for large repositories.  At least Python 2.5 is required (due to the
+use of "with").

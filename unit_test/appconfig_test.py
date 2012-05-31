@@ -1,11 +1,11 @@
 import os
 from cStringIO import StringIO
 import tempfile
-import unittest
+import testutils
 
 from gitcvs import appconfig
 
-class TestAppConfig(unittest.TestCase):
+class TestAppConfig(testutils.TestCase):
     def setUp(self):
         self.fd, self.cf = tempfile.mkstemp(suffix='.gitcvs')
         file(self.cf, 'r+').write('''

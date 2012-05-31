@@ -5,6 +5,8 @@ import time
 import git
 import cvs
 
+from gitcvs import util
+
 class Importer(object):
     def __init__(self, ctx, username):
         self.ctx = ctx
@@ -24,15 +26,19 @@ class Importer(object):
         gitDir = self.ctx.getGitDir()
         repoName = self.ctx.getRepositoryName(repository)
         repoDir = '/'.join((gitDir, repoName))
+        skeleton = self.ctx.getSkeleton(repository)
         if not os.path.exists(repoDir):
             os.chdir(gitDir)
             Git.clone(self.ctx.getGitRef(repository))
             os.chdir(repoDir)
             refs = Git.refs()
             if not refs:
-                # master branch needs to exist
-                # FIXME: if skeleton, add skeleton; else empty .gitignore
-                file('/'.join((repoDir, '.gitignore')), 'w')
+                # master branch needs to exist, so use skeleton or .gitignore
+                if skeleton:
+                    skelFiles = CVS.listFiles(skeleton)
+                    util.copyFiles(skeleton, repoDir, skelFiles)
+                else:
+                    file('/'.join((repoDir, '.gitignore')), 'w')
                 Git.addAll()
                 Git.commit('create new empty master branch')
                 Git.push('origin', 'master')
@@ -64,9 +70,12 @@ class Importer(object):
         exportedFiles = set('/'.join((repoName, x))
                             for x in set(CVS.listFiles(repoName)) - ignoreFiles)
         CVS.cleanKeywords(sorted(list(exportedFiles)))
+
         if addSkeleton:
-            pass
-            #FIXME
+            if skeleton:
+                skelFiles = CVS.listFiles(skeleton)
+                util.copyFiles(skeleton, repoDir, skelFiles)
+
         os.chdir(repoDir)
         if Git.status():
             # there is some change to commit

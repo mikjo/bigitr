@@ -17,6 +17,9 @@ class TestStory(unittest.TestCase):
         os.makedirs(self.gitdir)
         self.cvsdir = self.workdir + '/cvs'
         os.makedirs(self.cvsdir)
+        self.skeldir = self.workdir + '/skel'
+        os.makedirs(self.skeldir + '/m2')
+        file(self.skeldir + '/m2/.gitignore', 'w').write('*.jar\n*.o\n')
         # outside the system: the "server" directories
         self.cvsroot = self.workdir + '/cvsroot'
         os.makedirs(self.cvsroot)
@@ -54,9 +57,11 @@ class TestStory(unittest.TestCase):
                              'prefix.b1 = SOME FIXED STRING\n'
                              '[git/module2]\n'
                              'cvspath = module2\n'
+                             'skeleton = %s/m2\n'
                              'cvs.b1 = b1\n'
                              % (self.cvsroot,
-                                self.gitroot)
+                                self.gitroot,
+                                self.skeldir)
                              )
         self.ctx = context.Context(appConfig, repConfig)
         self.getCVSRoot = self.ctx.getCVSRoot
@@ -109,6 +114,7 @@ class TestStory(unittest.TestCase):
         self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
         self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
         self.assertFalse(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/.gitignore'))
 
         # now test with no changes in CVS
         imp.importcvs('git/module1', Git, CVS, 'b1', 'cvs-b1')
@@ -190,6 +196,8 @@ class TestStory(unittest.TestCase):
         os.system('git init --bare %s/git/module2' %self.gitroot)
         imp.importcvs('git/module2', Gitm2, CVSm2, 'b1', 'cvs-b1')
         self.assertTrue(os.path.exists(self.gitdir + '/module2/1'))
+        self.assertEqual(file(self.gitdir + '/module2/.gitignore').read(),
+            '*.jar\n*.o\n')
         self.pack('TESTROOT.2.tar.gz')
 
     def test_lowlevel2(self):

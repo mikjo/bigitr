@@ -1,11 +1,11 @@
 from cStringIO import StringIO
 import os
 import tempfile
-import unittest
+import testutils
 
 from gitcvs import log, context
 
-class TestLog(unittest.TestCase):
+class TestLog(testutils.TestCase):
     def setUp(self):
         self.logdir = tempfile.mkdtemp(suffix='.gitcvs')
         appConfig = StringIO('''

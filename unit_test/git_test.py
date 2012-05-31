@@ -1,10 +1,10 @@
 import mock
 from cStringIO import StringIO
-import unittest
+import testutils
 
 from gitcvs import git, shell, context
 
-class TestGit(unittest.TestCase):
+class TestGit(testutils.TestCase):
     def setUp(self):
         with mock.patch('gitcvs.log.Log') as mocklog:
             appConfig = StringIO('[global]\nlogdir = /logs\n')

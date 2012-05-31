@@ -1,9 +1,9 @@
 from cStringIO import StringIO
-import unittest
+import testutils
 
 from gitcvs import context, log
 
-class TestLoggingShell(unittest.TestCase):
+class TestLoggingShell(testutils.TestCase):
     def setUp(self):
         appConfig = StringIO('[global]\nlogdir = /logs\n'
                              '[export]\ncvsdir = /cvs')

@@ -2,11 +2,11 @@ import ConfigParser
 import os
 from cStringIO import StringIO
 import tempfile
-import unittest
+import testutils
 
 from gitcvs import repositorymap
 
-class TestRepositoryConfig(unittest.TestCase):
+class TestRepositoryConfig(testutils.TestCase):
     def setUp(self):
         self.fd, self.cf = tempfile.mkstemp(suffix='.gitcvs')
         file(self.cf, 'r+').write('''

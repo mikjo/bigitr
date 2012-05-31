@@ -2,11 +2,11 @@ import mock
 import os
 from StringIO import StringIO
 import tempfile
-import unittest
+import testutils
 
 from gitcvs import gitexport, context
 
-class GitExportTest(unittest.TestCase):
+class GitExportTest(testutils.TestCase):
     def setUp(self):
         self.username = 'janedoe'
         with mock.patch('gitcvs.log.Log') as mocklog:
