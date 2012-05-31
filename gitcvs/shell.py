@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+import time
 
 class LoggingShell(subprocess.Popen):
     def __init__(self, log, *args, **kwargs):
@@ -8,13 +9,28 @@ class LoggingShell(subprocess.Popen):
         self.error = kwargs.pop('error', True)
         kwargs.setdefault('stderr', log.stderr)
         kwargs.setdefault('stdout', log.stdout)
+        ts = self.timestamp()
+        cmd = ' '.join(args)
+        start = ' '.join((ts, 'START:', cmd, '\n'))
+        os.write(log.stderr, start)
+        os.write(log.stdout, start)
         self.p = subprocess.Popen.__init__(self, args, **kwargs)
+
+    def timestamp(self):
+        now = time.time()
+        frac = '%4.4f' %(now - int(now))
+        loc = time.localtime
+        tzname = time.tzname[time.daylight]
+        return time.strftime('[%a %b %d %H:%m:%S.'
+                             + frac[2:] + ' ' + tzname + ' %Y]')
 
     def wait(self):
         retcode = subprocess.Popen.wait(self)
+        ts = self.timestamp()
+        finish = '%s COMPLETE with return code: %d\n' %(ts, retcode)
+        os.write(self.log.stderr, finish)
+        os.write(self.log.stdout, finish)
         if retcode:
-            os.write(self.log.stderr,
-                     'command returned exit code %d\n' %retcode)
             logging.error(self.log.thiserr)
             for line in open(self.log.thiserr):
                 logging.error(line)

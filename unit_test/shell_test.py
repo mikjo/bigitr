@@ -1,3 +1,4 @@
+import gzip
 import logging
 import os
 from cStringIO import StringIO
@@ -40,7 +41,11 @@ logdir = %s
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
         for filename in files:
-            self.assertEqual(os.stat('/'.join((thislog, filename))).st_size, 0)
+            filename = '/'.join((thislog, filename))
+            self.assertEqual(
+                [x for x in gzip.GzipFile(filename).readlines()
+                 if not x.startswith('[')],
+                [])
         self.assertEqual(len(files), 2)
         self.assertEqual(self.logdata.getvalue(), '')
         self.logdata.truncate(0)
@@ -54,11 +59,16 @@ logdir = %s
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
-        self.assertEqual(len([x for x in files if x.endswith('.log.gz')]), 1)
-        self.assertEqual(len([x for x in files if x.endswith('.err')]), 1)
-        self.assertEqual(len(files), 2)
-        sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
-        self.assertEqual(len(sizes), 2)
+        for filename in files:
+            fileName = '/'.join((thislog, filename))
+            logLines = gzip.GzipFile(fileName).readlines()
+            nonLogLines = [x for x in logLines if not x.startswith('[')]
+            if '.log' in filename:
+                self.assertEqual(len(nonLogLines), 1)
+            else:
+                self.assertEqual(len(nonLogLines), 0)
+            self.assertTrue(
+                logLines[-1].endswith(' COMPLETE with return code: 0\n'))
         self.assertEqual(self.logdata.getvalue(), '')
         self.logdata.truncate(0)
 
@@ -77,8 +87,8 @@ logdir = %s
         self.assertEqual(len(files), 2)
         sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
         self.assertTrue(0 not in sizes)
-        self.assertTrue(self.logdata.getvalue().endswith(
-            '\ncommand returned exit code 1\n\n'))
+        self.assertTrue(' COMPLETE with return code: 1\n'
+                        in self.logdata.getvalue())
         self.logdata.truncate(0)
 
     def test_ErrorOutput(self):
@@ -90,13 +100,16 @@ logdir = %s
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
-        self.assertEqual(len([x for x in files if x.endswith('.err.gz')]), 1)
-        self.assertEqual(len([x for x in files if x.endswith('.log')]), 1)
         self.assertEqual(len(files), 2)
-        sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
-        self.assertEqual(len(sizes), 2)
-        self.assertTrue(self.logdata.getvalue().endswith(
-            '\ncommand returned exit code 1\n\n'))
+        for filename in files:
+            fileName = '/'.join((thislog, filename))
+            logLines = gzip.GzipFile(fileName).readlines()
+            nonLogLines = [x for x in logLines if not x.startswith('[')]
+            self.assertEqual(len(nonLogLines), 0)
+            self.assertTrue(
+                logLines[-1].endswith(' COMPLETE with return code: 1\n'))
+        self.assertTrue(' COMPLETE with return code: 1\n'
+                        in self.logdata.getvalue())
         self.logdata.truncate(0)
 
     def test_RaiseError(self):
@@ -120,36 +133,38 @@ logdir = %s
 
     def test_run(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
-        # warning of bad exit code will write to stderr
         retcode = shell.run(l, 'false', error=False)
         self.assertEqual(retcode, 1)
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
-        self.assertEqual(len([x for x in files if x.endswith('.err.gz')]), 1)
-        self.assertEqual(len([x for x in files if x.endswith('.log')]), 1)
-        self.assertEqual(len(files), 2)
-        sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
-        self.assertEqual(len(sizes), 2)
-        self.assertTrue(self.logdata.getvalue().endswith(
-            '\ncommand returned exit code 1\n\n'))
+        for filename in files:
+            fileName = '/'.join((thislog, filename))
+            logLines = gzip.GzipFile(fileName).readlines()
+            nonLogLines = [x for x in logLines if not x.startswith('[')]
+            self.assertEqual(len(nonLogLines), 0)
+            self.assertTrue(
+                logLines[-1].endswith(' COMPLETE with return code: 1\n'))
+        self.assertTrue(' COMPLETE with return code: 1\n'
+                        in self.logdata.getvalue())
         self.logdata.truncate(0)
         
     def test_readWithData(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
-        # warning of bad exit code will write to stderr
         retcode, output = shell.read(l, 'echo', 'foo')
         self.assertEqual(retcode, 0)
         self.assertEqual(output, 'foo\n')
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
-        self.assertEqual(len([x for x in files if x.endswith('.err')]), 1)
-        # captured output not in log file
-        self.assertEqual(len([x for x in files if x.endswith('.log')]), 1)
         self.assertEqual(len(files), 2)
-        sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
-        self.assertEqual(len(sizes), 1)
+        for filename in files:
+            fileName = '/'.join((thislog, filename))
+            logLines = gzip.GzipFile(fileName).readlines()
+            nonLogLines = [x for x in logLines if not x.startswith('[')]
+            self.assertEqual(len(nonLogLines), 0)
+            self.assertTrue(
+                logLines[-1].endswith(' COMPLETE with return code: 0\n'))
         self.assertEqual(self.logdata.getvalue(), '')
         self.logdata.truncate(0)
         
