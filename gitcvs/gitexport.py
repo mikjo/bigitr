@@ -64,6 +64,8 @@ class Exporter(object):
         GitList = Git.listContentFiles()
         GitFileSet = set(GitList)
         DeletedFiles = CVSFileSet - GitFileSet
+        # even if .cvsignore is deleted in git, do not remove it in CVS
+        DeletedFiles.discard('.cvsignore')
         AddedFiles = GitFileSet - CVSFileSet
         CommonFiles = GitFileSet.intersection(CVSFileSet)
         GitDirs = set(os.path.dirname(x) for x in GitFileSet)

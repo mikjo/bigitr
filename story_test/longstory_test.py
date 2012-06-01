@@ -19,7 +19,8 @@ class TestStory(unittest.TestCase):
         os.makedirs(self.cvsdir)
         self.skeldir = self.workdir + '/skel'
         os.makedirs(self.skeldir + '/m2')
-        file(self.skeldir + '/m2/.gitignore', 'w').write('*.jar\n*.o\n')
+        file(self.skeldir + '/m2/.gitignore', 'w').write(
+            '*.jar\n*.o\n.cvsignore\n')
         # outside the system: the "server" directories
         self.cvsroot = self.workdir + '/cvsroot'
         os.makedirs(self.cvsroot)
@@ -59,6 +60,7 @@ class TestStory(unittest.TestCase):
                              'cvspath = module2\n'
                              'skeleton = %s/m2\n'
                              'cvs.b1 = b1\n'
+                             'git.master = b1\n'
                              % (self.cvsroot,
                                 self.gitroot,
                                 self.skeldir)
@@ -106,6 +108,7 @@ class TestStory(unittest.TestCase):
         'test initial import process'
         self.unpack('TESTROOT.1.tar.gz')
         imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
         Git = git.Git(self.ctx, 'git/module1')
         CVS = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
         # the tool otherwise assumes that the remote repository exists
@@ -199,14 +202,33 @@ class TestStory(unittest.TestCase):
         # ensure that files get cleaned up
         self.assertFalse(os.path.exists(self.gitdir + '/module2/bad.jar'))
         self.assertEqual(file(self.gitdir + '/module2/.gitignore').read(),
-            '*.jar\n*.o\n')
-        # OK, we have all we need for the next test
-        self.pack('TESTROOT.2.tar.gz')
+            '*.jar\n*.o\n.cvsignore\n')
+        # .cvsignore was ignored
+        self.assertFalse(os.path.exists(self.gitdir + '/module2/.cvsignore'))
 
         # make sure that a stray file is cleaned up where necessary
         file('%s/module2/bad.jar' %self.gitdir, 'w')
         imp.importcvs('git/module2', Gitm2, CVSm2, 'b1', 'cvs-b1')
         self.assertFalse(os.path.exists(self.gitdir + '/module2/bad.jar'))
+
+        # merge cvs-b1 onto master, including not having .cvsignore
+        os.system('cd %s/module2; '
+                  'git checkout master; '
+                  'git merge cvs-b1 -m "prepare for export"; '
+                  'git push origin master; '
+                  %self.gitdir)
+
+        # make sure that .cvsignore is not deleted from CVS when we export
+        exp.exportgit('git/module2', Gitm2, CVSm2, 'master', 'export-master')
+        self.assertTrue(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/.cvsignore'))
+        # make sure that bad.jar WAS deleted from CVS when we exported
+        self.assertTrue(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/.cvsignore'))
+        self.assertFalse(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/bad.jar'))
+
+        self.pack('TESTROOT.2.tar.gz')
 
     def test_lowlevel2(self):
         'test updating multiple branches in multiple repositories together'

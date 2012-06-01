@@ -16,7 +16,12 @@ fashion.
   but different application configuration (local directories).
   However, no locking is attempted, so if two users run it at the
   same time, the results are undefined.
-* This tool commits to CVS and pushes to remove Git repositories.
+* This tool commits to CVS and pushes to remote Git repositories.
+* Files in CVS ignored by .gitignore will not be committed to the
+  corresponding Git branches, and if those .gitignore changes are
+  represented on a branch being exported from Git into CVS, those
+  files will be deleted from the CVS branch when the Git branch
+  is exported.
 
 There are two kinds of configuration files.
 * Application configuration: general behavior
