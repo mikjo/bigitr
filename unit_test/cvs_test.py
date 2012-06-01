@@ -70,12 +70,18 @@ class TestCVS(testutils.TestCase):
 
     def test_checkout(self):
         with mock.patch('gitcvs.git.shell.run'):
-            self.cvs.checkout()
-            shell.run.assert_called_once_with(mock.ANY,
-                'cvs', 'checkout', '-d', '%s/repo/brnch/Loc' %self.cdir,
-                '-r', 'brnch', 'Some/Loc')
-            self.assertEqual(os.environ['CVSROOT'],
-                self.ctx.getCVSRoot('repo', 'johndoe'))
+            with mock.patch.multiple('os', getcwd=mock.DEFAULT,
+                                           chdir=mock.DEFAULT):
+                self.cvs.checkout()
+                shell.run.assert_called_once_with(mock.ANY,
+                    'cvs', 'checkout', '-d', 'repo',
+                    '-r', 'brnch', 'Some/Loc')
+                self.assertEqual(os.environ['CVSROOT'],
+                    self.ctx.getCVSRoot('repo', 'johndoe'))
+                os.getcwd.assert_called_once_with()
+                self.assertEqual(os.chdir.call_count, 2)
+                os.chdir.assert_any_call(os.getcwd())
+                os.chdir.assert_any_call('%s/repo/brnch' %self.cdir)
 
     def test_update(self):
         with mock.patch('gitcvs.git.shell.run'):

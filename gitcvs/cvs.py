@@ -14,10 +14,20 @@ def setCVSROOT(fn):
         fn(self, *args, **kwargs)
     return wrapper
 
-def inCVSROOT(fn):
+def inCVSPATH(fn):
     def wrapper(self, *args, **kwargs):
         oldDir = os.getcwd()
         os.chdir(self.path)
+        try:
+            fn(self, *args, **kwargs)
+        finally:
+            os.chdir(oldDir)
+    return wrapper
+
+def inCVSDIR(fn):
+    def wrapper(self, *args, **kwargs):
+        oldDir = os.getcwd()
+        os.chdir(os.path.dirname(self.path))
         try:
             fn(self, *args, **kwargs)
         finally:
@@ -29,6 +39,7 @@ class CVS(object):
         self.ctx = ctx
         self.location = self.ctx.getCVSPath(repo)
         self.path = ctx.getCVSBranchCheckoutDir(repo, branch)
+        self.pathbase = ctx.getRepositoryName(repo)
         self.branch = branch
         self.log = self.ctx.logs[repo]
         self.root = ctx.getCVSRoot(repo, username)
@@ -60,15 +71,16 @@ class CVS(object):
             *fileList)
 
     @setCVSROOT
+    @inCVSDIR
     def checkout(self):
         shell.run(self.log,
-            'cvs', 'checkout', '-d', self.path, '-r', self.branch, self.location)
+            'cvs', 'checkout', '-d', self.pathbase, '-r', self.branch, self.location)
 
-    @inCVSROOT
+    @inCVSPATH
     def update(self):
         shell.run(self.log, 'cvs', 'update', '-d')
 
-    @inCVSROOT
+    @inCVSPATH
     def deleteFiles(self, fileNames):
         if fileNames:
             for fileName in fileNames:
@@ -79,12 +91,12 @@ class CVS(object):
         'call addFiles for any files being added rather than updated'
         util.copyFiles(sourceDir, self.path, fileNames)
 
-    @inCVSROOT
+    @inCVSPATH
     def addFiles(self, fileNames):
         if fileNames:
             shell.run(self.log, 'cvs', 'add', *fileNames)
 
-    @inCVSROOT
+    @inCVSPATH
     def commit(self, message):
         fd, name = tempfile.mkstemp('.gitcvs')
         os.write(fd, message)
