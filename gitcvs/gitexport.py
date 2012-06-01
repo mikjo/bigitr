@@ -28,7 +28,7 @@ class Exporter(object):
             self.exportBranches(repository, Git)
 
     def exportBranches(self, repository, Git):
-        for cvsbranch, gitbranch, exportbranch in self.ctx.getExportBranchMaps(repository):
+        for gitbranch, cvsbranch, exportbranch in self.ctx.getExportBranchMaps(repository):
             CVS = cvs.CVS(self.ctx, repository, cvsbranch, self.username)
             self.exportgit(repository, Git, CVS, gitbranch, exportbranch)
 

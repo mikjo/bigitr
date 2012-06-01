@@ -89,11 +89,13 @@ class RepositoryConfig(config.Config):
         return self.getOptional(repository, optname)
 
     def getImportBranchMaps(self, repository):
+        'return: [(cvsbranch, gitbranch), ...]'
         return [(x[4:], 'cvs-' + self.get(repository, x))
                  for x in self.options(repository)
                  if x.startswith('cvs.')]
 
     def getExportBranchMaps(self, repository):
+        'return: [(gitbranch, cvsbranch, exportbranch), ...]'
         return [(x[4:], self.get(repository, x), 'export-' + x[4:])
                  for x in self.options(repository)
                  if x.startswith('git.')]
