@@ -203,7 +203,7 @@ class TestStory(unittest.TestCase):
         self.assertFalse(os.path.exists(self.gitdir + '/module2/bad.jar'))
         self.assertEqual(file(self.gitdir + '/module2/.gitignore').read(),
             '*.jar\n*.o\n.cvsignore\n')
-        # .cvsignore was ignored
+        # .cvsignore file was ignored
         self.assertFalse(os.path.exists(self.gitdir + '/module2/.cvsignore'))
 
         # make sure that a stray file is cleaned up where necessary
@@ -218,13 +218,13 @@ class TestStory(unittest.TestCase):
                   'git push origin master; '
                   %self.gitdir)
 
-        # make sure that .cvsignore is not deleted from CVS when we export
+        # make sure that .cvsignore was not deleted from CVS when we export
         exp.exportgit('git/module2', Gitm2, CVSm2, 'master', 'export-master')
         self.assertTrue(os.path.exists(
             self.cvsdir + '/module2/b1/module2/.cvsignore'))
-        # make sure that bad.jar WAS deleted from CVS when we exported
         self.assertTrue(os.path.exists(
-            self.cvsdir + '/module2/b1/module2/.cvsignore'))
+            self.cvsdir + '/module2/b1/module2/ignore/.cvsignore'))
+        # make sure that bad.jar WAS deleted from CVS when we exported
         self.assertFalse(os.path.exists(
             self.cvsdir + '/module2/b1/module2/bad.jar'))
 
