@@ -17,6 +17,8 @@ class TestStory(unittest.TestCase):
         os.makedirs(self.gitdir)
         self.cvsdir = self.workdir + '/cvs'
         os.makedirs(self.cvsdir)
+        self.expdir = self.workdir + '/exp'
+        os.makedirs(self.expdir)
         self.skeldir = self.workdir + '/skel'
         os.makedirs(self.skeldir + '/m2')
         file(self.skeldir + '/m2/.gitignore', 'w').write(
@@ -42,9 +44,12 @@ class TestStory(unittest.TestCase):
                              'gitdir = %s\n'
                              '[export]\n'
                              'cvsdir = %s\n'
+                             '[import]\n'
+                             'cvsdir = %s\n'
                              %(self.logdir,
                                self.gitdir,
-                               self.cvsdir)
+                               self.cvsdir,
+                               self.expdir) # "cvs export" to import into git
                             )
         repConfig = StringIO('[GLOBAL]'
                              'cvsroot = %s\n'
@@ -61,6 +66,9 @@ class TestStory(unittest.TestCase):
                              'skeleton = %s/m2\n'
                              'cvs.b1 = b1\n'
                              'git.master = b1\n'
+                             '[git/module3]\n'
+                             'cvspath = module3\n'
+                             'cvs.b1 = b1\n'
                              % (self.cvsroot,
                                 self.gitroot,
                                 self.skeldir)
@@ -227,6 +235,18 @@ class TestStory(unittest.TestCase):
         # make sure that bad.jar WAS deleted from CVS when we exported
         self.assertFalse(os.path.exists(
             self.cvsdir + '/module2/b1/module2/bad.jar'))
+
+        # .gitignore primed from .cvsignore if it exists and no skeleton
+        Gitm3 = git.Git(self.ctx, 'git/module3')
+        CVSm3 = cvs.CVS(self.ctx, 'git/module3', 'b1', imp.username)
+        # the tool otherwise assumes that the remote repository exists
+        os.system('git init --bare %s/git/module3' %self.gitroot)
+        imp.importcvs('git/module3', Gitm3, CVSm3, 'b1', 'cvs-b1')
+        os.system('cd %s/module3; '
+                  'git checkout master; '
+                  %self.gitdir)
+        self.assertEqual(file(self.gitdir + '/module3/.gitignore').read(),
+            'copy.to.gitignore\n')
 
         self.pack('TESTROOT.2.tar.gz')
 

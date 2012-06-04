@@ -8,10 +8,11 @@
 # [import]
 # onerror = abort # abort|warn|continue
 # resetids = true # false to leave $cvsid:...$ alone
+# cvsdir = /path/to/directory/for/cvs/export
 # [export]
 # preimport = true # false to overwrite whatever is in CVS
 # onerror = abort # abort|warn|continue
-# cvsdir = /path/to/directory/for/cvs/checkouts/for/branch/imports
+# cvsdir = /path/to/directory/for/cvs/checkouts
 #
 
 import config
@@ -46,6 +47,9 @@ class AppConfig(config.Config):
 
     def getImportError(self):
         return onerror[self.get('import', 'onerror')]
+
+    def getImportCVSDir(self):
+        return self.get('import', 'cvsdir')
     
     def getResetIds(self):
         return self.getboolean('import', 'resetids')
@@ -58,4 +62,3 @@ class AppConfig(config.Config):
 
     def getExportCVSDir(self):
         return self.get('export', 'cvsdir')
-

@@ -47,17 +47,14 @@ class CVS(object):
     def setEnvironment(self):
         os.environ['CVSROOT'] = self.root
 
-    def listFiles(self, path):
+    def listContentFiles(self):
         allfiles = []
-        dirlen = len(path) + 1
-        for root, dirs, files in os.walk(path):
+        dirlen = len(self.path) + 1
+        for root, dirs, files in os.walk(self.path):
             if 'CVS' in dirs:
                 dirs.remove('CVS') 
             allfiles.extend(['/'.join((root, x))[dirlen:] for x in files])
         return allfiles
-
-    def listContentFiles(self):
-        return self.listFiles(self.path)
 
     @setCVSROOT
     def export(self, targetDir):

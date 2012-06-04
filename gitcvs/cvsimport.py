@@ -27,6 +27,17 @@ class Importer(object):
         repoName = self.ctx.getRepositoryName(repository)
         repoDir = '/'.join((gitDir, repoName))
         skeleton = self.ctx.getSkeleton(repository)
+        exportDir = self.ctx.getCVSExportDir(repository)
+
+        if os.path.exists(exportDir):
+            util.removeRecursive(exportDir)
+        os.makedirs(exportDir)
+        os.chdir(os.path.dirname(exportDir))
+        CVS.export(os.path.basename(exportDir))
+        exportedFiles = util.listFiles(exportDir)
+        os.chdir(exportDir)
+        CVS.cleanKeywords(exportedFiles)
+
         if not os.path.exists(repoDir):
             os.chdir(gitDir)
             Git.clone(self.ctx.getGitRef(repository))
@@ -35,10 +46,14 @@ class Importer(object):
             if not refs:
                 # master branch needs to exist, so use skeleton or .gitignore
                 if skeleton:
-                    skelFiles = CVS.listFiles(skeleton)
+                    skelFiles = util.listFiles(skeleton)
                     util.copyFiles(skeleton, repoDir, skelFiles)
                 else:
-                    file('/'.join((repoDir, '.gitignore')), 'w')
+                    gitignore = file('/'.join((repoDir, '.gitignore')), 'w')
+                    cvsignoreName = '/'.join((exportDir, '.cvsignore'))
+                    if os.path.exists(cvsignoreName):
+                        gitignore.write(file(cvsignoreName).read())
+                    gitignore.close()
                 Git.addAll()
                 Git.commit('create new empty master branch')
                 Git.push('origin', 'master')
@@ -66,15 +81,12 @@ class Importer(object):
             os.remove(filename)
 
         os.chdir(gitDir)
-        ignoreFiles = set(CVS.listFiles(repoName))
-        CVS.export(repoName)
-        exportedFiles = set('/'.join((repoName, x))
-                            for x in set(CVS.listFiles(repoName)) - ignoreFiles)
-        CVS.cleanKeywords(sorted(list(exportedFiles)))
+
+        util.copyTree(exportDir, repoDir)
 
         if addSkeleton:
             if skeleton:
-                skelFiles = CVS.listFiles(skeleton)
+                skelFiles = util.listFiles(skeleton)
                 util.copyFiles(skeleton, repoDir, skelFiles)
 
         os.chdir(repoDir)

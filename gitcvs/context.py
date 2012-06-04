@@ -27,3 +27,9 @@ class Context(object):
         repo = self.getRepositoryName(repository)
         checkout = os.path.basename(self.getCVSPath(repository))
         return '/'.join((base, repo, cvsbranch, checkout))
+
+    def getCVSExportDir(self, repository):
+        base = self.getImportCVSDir()
+        repo = self.getRepositoryName(repository)
+        checkout = os.path.basename(self.getCVSPath(repository))
+        return '/'.join((base, repo, checkout))
