@@ -443,6 +443,7 @@ class TestStory(unittest.TestCase):
             $Revision$
             $Source$
             $State$
+            $Log$
 ''')
         os.system('cd %s/module1; '
                   'cvs add keywords; '
@@ -459,6 +460,7 @@ class TestStory(unittest.TestCase):
         self.assertTrue('$Revision:' in keywords)
         self.assertTrue('$Source:' in keywords)
         self.assertTrue('$State:' in keywords)
+        self.assertTrue('$Log:' in keywords)
         imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
         keywords = file(self.gitdir + '/module1/keywords').read()
         self.assertTrue('$Author$' in keywords)
@@ -471,3 +473,5 @@ class TestStory(unittest.TestCase):
         self.assertTrue('$Revision$' in keywords)
         self.assertTrue('$Source$' in keywords)
         self.assertTrue('$State$' in keywords)
+        self.assertTrue('$Log:' not in keywords)
+        self.assertTrue('OldLog:' in keywords)

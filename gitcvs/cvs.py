@@ -64,7 +64,8 @@ class CVS(object):
     def cleanKeywords(self, fileList):
         shell.run(self.log,
             'sed', '-i', '-r',
-            r's/\$(Author|Date|Header|Id|Name|Locker|RCSfile|Revision|Source|State):[^\$]*\$/$\1$/g',
+            r's/\$(Author|Date|Header|Id|Name|Locker|RCSfile|Revision|Source|State):[^\$]*\$/$\1$/g;'
+            r's/\$Log.*\$/OldLog:/g',
             *fileList)
 
     @setCVSROOT
