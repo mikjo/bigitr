@@ -1,13 +1,24 @@
 This tool synchronizes Git and CVS repositories in an asynchronous
 fashion.
 
+* This tool commits to CVS and pushes to remote Git repositories.
+  Do backups, and test configuration initially with throwaway
+  copies of CVS and Git repositories.
 * It exports branches in Git into branches in CVS.
+* It will not touch the CVS trunk (at least for now).
 * It imports branches from CVS into special import branches (with names
   starting with "cvs-" in Git.
-* It is the developer's responsibility to merge changes from the
-  special cvs-* import branches into appropriate development branches.
-  (May later optionally attempt automated merges with additional config.)
-* It will not touch the CVS trunk (at least for now).
+* After committing to branches (not including fast-forwarding the
+  export- branches), it will automatically attempt to merge changes
+  into other specified branches.  If any merges are successful, those
+  merges themselves may trigger other merge operations.
+* It is reasonable to configure no automatic merging at all.  However,
+  if you have configured that the Git "master" branch should be
+  exported to an existing CVS branch, then you need to take care
+  to populate the Git "master" branch before exporting.  In most
+  cases, a master branch should be a merge target at least for
+  the initial import, even if the merge target is later disabled in
+  favor of merging changes manually.
 * Branches in the Git repositories with names starting with "cvs-"
   and "export-" are reserved to be written only by this tool.
   These branches are pushed to the origin repository so that local
@@ -16,7 +27,6 @@ fashion.
   but different application configuration (local directories).
   However, no locking is attempted, so if two users run it at the
   same time, the results are undefined.
-* This tool commits to CVS and pushes to remote Git repositories.
 * Files in CVS ignored by .gitignore will not be committed to the
   corresponding Git branches, and if those .gitignore changes are
   represented on a branch being exported from Git into CVS, those
