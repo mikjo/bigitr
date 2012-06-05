@@ -69,6 +69,7 @@ class TestStory(unittest.TestCase):
                              '[git/module3]\n'
                              'cvspath = module3\n'
                              'cvs.b1 = b1\n'
+                             'git.master = b1\n'
                              % (self.cvsroot,
                                 self.gitroot,
                                 self.skeldir)
@@ -247,6 +248,9 @@ class TestStory(unittest.TestCase):
                   %self.gitdir)
         self.assertEqual(file(self.gitdir + '/module3/.gitignore').read(),
             'copy.to.gitignore\n')
+
+        # Make sure that we don't accidentally delete a CVS branch
+        self.assertRaises(RuntimeError, exp.exportBranches, 'git/module3', Gitm3)
 
         self.pack('TESTROOT.2.tar.gz')
 

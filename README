@@ -12,13 +12,17 @@ fashion.
   export- branches), it will automatically attempt to merge changes
   into other specified branches.  If any merges are successful, those
   merges themselves may trigger other merge operations.
-* It is reasonable to configure no automatic merging at all.  However,
-  if you have configured that the Git "master" branch should be
-  exported to an existing CVS branch, then you need to take care
-  to populate the Git "master" branch before exporting.  In most
-  cases, a master branch should be a merge target at least for
-  the initial import, even if the merge target is later disabled in
-  favor of merging changes manually.
+* It is reasonable to configure no automatic merging at all.  Be,
+  aware that if you have configured the Git "master" branch to be
+  exported to an existing CVS branch, then you should populate the
+  Git "master" branch before exporting.  In most cases, a master
+  branch should be a merge target at least for the initial import,
+  even if the merge target is later disabled in favor of merging
+  changes manually.
+* An attempt to export an empty Git branch to a CVS branch will
+  raise an exception rather than deleting all the files on the CVS
+  branch.  If you really want to delete all the files on the CVS
+  branch, do it by hand.
 * Branches in the Git repositories with names starting with "cvs-"
   and "export-" are reserved to be written only by this tool.
   These branches are pushed to the origin repository so that local

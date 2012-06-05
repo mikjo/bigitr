@@ -73,6 +73,12 @@ class Exporter(object):
         CVSDirs = set(os.path.dirname(x) for x in CVSFileSet)
         AddedDirs = GitDirs - CVSDirs
 
+        if not GitFileSet - set(('.gitignore',)):
+            # do not push an empty branch in order to avoid deleting a
+            # whole CVS branch due to configuration failure
+            raise RuntimeError("Not committing empty branch '%s'"
+                               " from git branch '%s'" %(CVS.branch, gitbranch))
+
         GitMessages = Git.logmessages(exportbranch, gitbranch)
         if GitMessages == '':
             # if there are any differences this is the first export
