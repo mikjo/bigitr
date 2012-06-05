@@ -28,6 +28,7 @@ class Importer(object):
         repoDir = '/'.join((gitDir, repoName))
         skeleton = self.ctx.getSkeleton(repository)
         exportDir = self.ctx.getCVSExportDir(repository)
+        success = True
 
         if os.path.exists(exportDir):
             util.removeRecursive(exportDir)
@@ -72,6 +73,8 @@ class Importer(object):
         else:
             if Git.branch() != gitbranch:
                 Git.checkout(gitbranch)
+            Git.fetch()
+            Git.mergeFastForward('origin/' + gitbranch)
 
         # clean up after any garbage left over from previous runs so
         # that we can change branches
@@ -100,6 +103,35 @@ class Importer(object):
             Git.commit('import from CVS as of %s' %time.asctime())
             Git.push('origin', gitbranch)
 
+        # try to merge downstream branches even if there was nothing to
+        # commit, because a merge conflict might have been resolved
+        if not self.merge(repository, Git, gitbranch):
+            success = False
+
         # Status can report clean with .gitignored files existing
         # Remove any .gitignored files added by the "cvs export"
         Git.pristine()
+
+        if not success:
+            raise RuntimeError('merge failed for branch %s: see %s' %(
+                gitbranch, Git.log.thiserr))
+
+    def merge(self, repository, Git, gitbranch):
+        success = True
+
+        Git.pristine()
+        for target in self.ctx.getMergeBranchMaps(repository
+                ).get(gitbranch, set()):
+            Git.checkout(target)
+            Git.mergeFastForward('origin/' + target)
+            rc = Git.mergeDefault(gitbranch,
+                "Automated merge '%s' into '%s'" %(gitbranch, target))
+            if rc != 0:
+                success = False
+            else:
+                Git.push('origin', target)
+                rc = self.merge(repository, Git, target)
+                if not rc:
+                    success = False
+
+        return success

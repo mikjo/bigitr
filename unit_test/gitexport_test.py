@@ -39,7 +39,7 @@ class GitExportTest(testutils.TestCase):
             self.exp.exportAll()
             self.exp.exportgit.assert_has_calls(
                 [mock.call('repo', mock.ANY, mock.ANY, 'master', 'export-master'),
-                 mock.call('repo2', mock.ANY, mock.ANY, 'master', 'export-master'),
-                 mock.call('repo2', mock.ANY, mock.ANY, 'b1', 'export-b1')])
+                 mock.call('repo2', mock.ANY, mock.ANY, 'b1', 'export-b1'),
+                 mock.call('repo2', mock.ANY, mock.ANY, 'master', 'export-master')])
 
     # exportgit tested only by story testing

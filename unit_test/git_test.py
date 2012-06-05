@@ -245,6 +245,22 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'add', '-A', '.')
 
+    def test_mergeDefault(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            shell.run.return_value = 0
+            rc = self.git.mergeDefault('brnch', 'msg')
+            shell.run.assert_called_once_with(mock.ANY,
+                'git', 'merge', 'brnch', '-m', 'msg', error=False)
+            self.assertEqual(rc, 0)
+
+    def test_mergeDefaultFailure(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            shell.run.return_value = 1
+            rc = self.git.mergeDefault('brnch', 'msg')
+            shell.run.assert_called_once_with(mock.ANY,
+                'git', 'merge', 'brnch', '-m', 'msg', error=False)
+            self.assertEqual(rc, 1)
+
     def test_mergeFastForward(self):
         with mock.patch('gitcvs.git.shell.run'):
             self.git.mergeFastForward('brnch')

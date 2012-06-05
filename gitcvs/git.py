@@ -101,6 +101,10 @@ class Git(object):
     def addAll(self):
         shell.run(self.log, 'git', 'add', '-A', '.')
 
+    def mergeDefault(self, branch, message):
+        return shell.run(self.log, 'git', 'merge', branch, '-m', message,
+                         error=False)
+
     def mergeFastForward(self, branch):
         shell.run(self.log, 'git', 'merge', '--ff', '--ff-only', branch)
 

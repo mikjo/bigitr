@@ -24,6 +24,8 @@ cvs.a2 = a2
 git.master = a2
 git.a1 = a1
 prefix.a2 = cvs-a2-prefix
+merge.cvs-a2 = a2 master
+merge.cvs-a1 = a1
 email = foo@bar baz@blah
 
 [Path/To/Git/repo2]
@@ -108,8 +110,17 @@ git.master = a2
 
     def test_getExportBranchMaps(self):
         self.assertEqual(self.cfg.getExportBranchMaps('Path/To/Git/repository'),
-                         [('master', 'a2', 'export-master'),
-                          ('a1', 'a1', 'export-a1')])
+                         [('a1', 'a1', 'export-a1'),
+                          ('master', 'a2', 'export-master')])
+
+    def test_getMergeBranchMaps(self):
+        self.assertEqual(self.cfg.getMergeBranchMaps('Path/To/Git/repository'),
+                         {'cvs-a2': set(('a2', 'master')),
+                          'cvs-a1': set(('a1',))})
+
+    def test_getMergeBranchMapsEmpty(self):
+        self.assertEqual(self.cfg.getMergeBranchMaps('Path/To/Git/repo2'),
+                         {})
 
     def test_getEmail(self):
         self.assertEqual(self.cfg.getEmail('Path/To/Git/repository'),

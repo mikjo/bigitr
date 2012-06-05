@@ -422,7 +422,106 @@ class TestStory(unittest.TestCase):
             len(set([x[0] for x in Git.refs() if 'master' in x[1]])),
             1)
 
+
     def test_lowlevel5(self):
+        'test automated merge'
+        self.ctx._rm.set('git/module1', 'merge.cvs-b1', 'b1 b2')
+        self.ctx._rm.set('git/module1', 'merge.cvs-b2', 'b2')
+        self.ctx._rm.set('git/module1', 'merge.b2', 'master')
+        # note: not merging b1 onto master on purpose for a test case
+        # difference; in normal use, b1 would probably be merged onto master
+
+        self.unpack('TESTROOT.5.tar.gz')
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1 && '
+                  'git checkout cvs-b2 &&'
+                  'git branch b2 && '
+                  'git push origin b2; '
+                  'git branch --set-upstream b2 origin/b2; '
+                  %self.gitco)
+
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/cascade', 'w').write('cascade\n')
+        os.system('cd %s/module1; cvs add cascade; cvs commit -m "add cascade"'
+                  %self.cvsco)
+
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+
+        for branch in ('cvs-b1', 'b1', 'b2', 'master'):
+            # the workdir should not need a pull
+            os.system('cd %s/module1; git checkout %s; '
+                      %(self.gitdir, branch))
+            self.assertEqual(file(self.gitdir + '/module1/cascade').read(),
+                                  'cascade\n')
+            # the user's checkout needs a pull but it should all be there
+            os.system('cd %s/module1; git checkout %s; git pull'
+                      %(self.gitco, branch))
+            self.assertEqual(file(self.gitco + '/module1/cascade').read(),
+                                  'cascade\n')
+
+        # now create an import conflict on master
+        file(self.cvsco + '/module1/cascade', 'w').write('please cascade\n')
+        os.system('cd %s/module1; cvs add cascade; cvs commit -m "prep conflict"'
+                  %self.cvsco)
+        file(self.gitco + '/module1/cascade', 'w').write('do not cascade\n')
+        os.system('cd %s/module1; git commit -a -m "create merge conflict" ;'
+                  'git push origin master;'
+                  %self.gitco)
+
+        self.assertRaises(RuntimeError,
+            imp.importcvs, 'git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        os.system('cd %s/module1; git checkout master; git pull --all'
+                  %self.gitco)
+
+        # resolve conflict:
+        file(self.gitco + '/module1/cascade', 'w').write('please cascade\n')
+        os.system('cd %s/module1; git commit -a -m "resolve merge conflict" ;'
+                  'git push origin master;'
+                  %self.gitco)
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        # and now make sure they were all pushed
+        for branch in ('cvs-b1', 'b1', 'b2', 'master'):
+            # the workdir should not need a pull
+            os.system('cd %s/module1; git checkout %s; '
+                      %(self.gitdir, branch))
+            self.assertEqual(file(self.gitdir + '/module1/cascade').read(),
+                                  'please cascade\n')
+            # the user's checkout needs a pull but it should all be there
+            os.system('cd %s/module1; git checkout %s; git pull'
+                      %(self.gitco, branch))
+            self.assertEqual(file(self.gitco + '/module1/cascade').read(),
+                                  'please cascade\n')
+
+        # we have not yet exported, so CVS's b2 and Git's cvs-b2 do
+        # not have the cascade file at all yet
+        os.system('cd %s/module1; git checkout cvs-b2; git pull' %self.gitco)
+        self.assertFalse(os.path.exists(self.gitco + '/module1/cascade'))
+
+        os.system('cd %s/module1; cvs up -r b2 ' %self.cvsco)
+        self.assertFalse(os.path.exists(self.cvsco + '/module1/cascade'))
+
+        # now push all of this back to CVS
+        exp.exportBranches('git/module1', Git)
+
+        os.system('cd %s/module1; cvs up -r b2 ' %self.cvsco)
+        self.assertEqual(file(self.cvsco + '/module1/cascade').read(),
+                              'please cascade\n')
+
+        # and check that the import picks up the merge to the cvs-b2 branch
+        imp.importBranches('git/module1', Git)
+        os.system('cd %s/module1; git checkout cvs-b2; git pull' %self.gitco)
+        self.assertEqual(file(self.gitco + '/module1/cascade').read(),
+                              'please cascade\n')
+
+        self.pack('TESTROOT.6.tar.gz')
+
+    def test_lowlevel5keyword(self):
         'test cvs keyword demangling'
         self.unpack('TESTROOT.5.tar.gz')
         exp = gitexport.Exporter(self.ctx, 'johndoe')
