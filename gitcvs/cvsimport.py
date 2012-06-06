@@ -36,6 +36,9 @@ class Importer(object):
         os.chdir(os.path.dirname(exportDir))
         CVS.export(os.path.basename(exportDir))
         exportedFiles = util.listFiles(exportDir)
+        if not exportedFiles:
+            raise RuntimeError("CVS branch '%s' for location '%s' contains no files"
+                               %(CVS.branch, CVS.location))
         os.chdir(exportDir)
         CVS.cleanKeywords(exportedFiles)
 

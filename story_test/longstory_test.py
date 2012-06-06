@@ -4,12 +4,15 @@ import os
 import tempfile
 import unittest
 
-from gitcvs import cvsimport, gitexport, context, git, cvs
+from gitcvs import cvsimport, gitexport, context, git, cvs, util
 
 class TestStory(unittest.TestCase):
     def setUp(self):
         self.oldcwd = os.getcwd()
         self.workdir = tempfile.mkdtemp(suffix='.gitcvs')
+        # make sure that bad tests don't cause git commits in
+        # the source repository!
+        os.chdir(self.workdir)
         # config directories
         self.logdir = self.workdir + '/log'
         os.makedirs(self.logdir)
@@ -83,12 +86,7 @@ class TestStory(unittest.TestCase):
 
     @staticmethod
     def removeRecursive(dir):
-        for b, dirs, files in os.walk(dir, topdown=False):
-            for f in files:
-                os.remove('/'.join((b, f)))
-            for d in dirs:
-                os.rmdir('/'.join((b, d)))
-        os.removedirs(dir)
+        util.removeRecursive(dir)
 
     def tearDown(self):
         os.chdir(self.oldcwd)
@@ -253,6 +251,43 @@ class TestStory(unittest.TestCase):
         self.assertRaises(RuntimeError, exp.exportBranches, 'git/module3', Gitm3)
 
         self.pack('TESTROOT.2.tar.gz')
+
+    def test_lowlevel2badCVSBranch(self):
+        # Make sure that we raise an error for missing CVS branch
+        # and don't create a Git branch for it
+        self.unpack('TESTROOT.2.tar.gz')
+        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSbad = cvs.CVS(self.ctx, 'git/module1', 'bad', imp.username)
+        self.assertRaises(ValueError, imp.importcvs,
+            'git/module1', Git, CVSbad, 'bad', 'cvs-bad')
+        # ensure that we didn't get to checking out a git dir,
+        # let alone create a git branch
+        self.assertFalse(os.path.exists(self.gitdir + '/module1'))
+
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
+                  %(self.cvsco, self.cvsroot))
+        os.system('cd %s/module1; '
+                  'mkdir empty; '
+                  'touch empty/bad; '
+                  'cvs add empty; '
+                  'cvs add empty/bad; '
+                  'cvs commit -r b1 -m "add empty/bad to b1"; '
+                  'cvs tag -b bad; '
+                  'cvs update -r b1; '
+                  'rm empty/bad; '
+                  'cvs rm empty/bad; '
+                  'cvs commit -r bad -m "remove empty/bad from bad"; '
+                  %self.cvsco)
+
+        self.ctx._rm.set('git/module1', 'cvspath', 'module1/empty')
+        CVSbad = cvs.CVS(self.ctx, 'git/module1', 'bad', imp.username)
+        self.assertRaises(RuntimeError, imp.importcvs,
+            'git/module1', Git, CVSbad, 'bad', 'cvs-bad')
+        # ensure that we didn't get to checking out a git dir,
+        # let alone create a git branch
+        self.assertFalse(os.path.exists(self.gitdir + '/module1'))
+        # do not pack anything, since we do not want to preseve these changes
 
     def test_lowlevel2(self):
         'test updating multiple branches in multiple repositories together'
