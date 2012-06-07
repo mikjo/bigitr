@@ -16,7 +16,7 @@ class Git(object):
         shell.run(self.log, 'git', 'reset', '--hard', 'HEAD')
 
     def clean(self):
-        shell.run(self.log, 'git', 'clean', '--force', '-x')
+        shell.run(self.log, 'git', 'clean', '--force', '-x', '-d')
 
     def pristine(self):
         if self.statusIgnored():

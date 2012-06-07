@@ -36,7 +36,7 @@ class TestGit(testutils.TestCase):
         with mock.patch('gitcvs.git.shell.run'):
             self.git.clean()
             shell.run.assert_called_once_with(mock.ANY,
-                'git', 'clean', '--force', '-x')
+                'git', 'clean', '--force', '-x', '-d')
 
     def test_pristine(self):
         with mock.patch.multiple(self.git, statusIgnored=mock.DEFAULT,
