@@ -81,7 +81,9 @@ class Exporter(object):
 
         GitMessages = Git.logmessages(exportbranch, gitbranch)
         if GitMessages == '':
-            # if there are any differences this is the first export
+            # if there are no differences this is the first export,
+            # or there have been no changes since the last export and
+            # so no commit will actually be generated
             GitMessages = 'Initial export to CVS from git branch %s' %gitbranch
         prefix = self.ctx.getBranchPrefix(repository, CVS.branch)
         if prefix:
@@ -93,7 +95,7 @@ class Exporter(object):
         CVS.copyFiles(repoDir, sorted(list(CommonFiles.union(AddedFiles))))
         # directories need to be added first, and here sorted order
         # causes directories to be specified in top-down order
-        CVS.addFiles(sorted(list(AddedDirs)))
+        CVS.addDirectories(sorted(list(AddedDirs)))
         CVS.addFiles(sorted(list(AddedFiles)))
 
         CVS.commit(GitMessages)

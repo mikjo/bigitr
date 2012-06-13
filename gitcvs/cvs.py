@@ -90,6 +90,15 @@ class CVS(object):
         util.copyFiles(sourceDir, self.path, fileNames)
 
     @inCVSPATH
+    def addDirectories(self, dirNames):
+        for dirName in dirNames:
+            parent = os.path.dirname(dirName)
+            if parent and parent != '/' and not os.path.exists(parent + '/CVS'):
+                self.addDirectories((parent,))
+            if not os.path.exists(dirName + '/CVS'):
+                shell.run(self.log, 'cvs', 'add', dirName)
+
+    @inCVSPATH
     def addFiles(self, fileNames):
         if fileNames:
             shell.run(self.log, 'cvs', 'add', *fileNames)

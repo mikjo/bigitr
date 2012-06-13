@@ -134,6 +134,33 @@ class TestCVS(testutils.TestCase):
             self.cvs.copyFiles('/ignore', [])
             self.assertFalse(os.path.exists.called)
 
+    def test_addDirectories(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            with mock.patch('os.path.exists'):
+                # if CVS directories exist
+                os.path.exists.return_value = True
+                self.cvs.addDirectories(['a', 'b', 'dir/metoo'])
+                self.assertFalse(shell.run.called)
+                # if CVS directories do not exist
+                os.path.exists.return_value = False
+                self.cvs.addDirectories(['a', 'b', 'dir/metoo'])
+                shell.run.assert_has_calls([
+                    mock.call(mock.ANY, 'cvs', 'add', 'a'),
+                    mock.call(mock.ANY, 'cvs', 'add', 'b'),
+                    mock.call(mock.ANY, 'cvs', 'add', 'dir'),
+                    mock.call(mock.ANY, 'cvs', 'add', 'dir/metoo'),
+                ])
+                shell.run.reset_mock()
+                # make sure absolute paths do not recurse
+                os.path.exists.return_value = False
+                self.cvs.addDirectories(['/a', '/b', '/dir/metoo'])
+                shell.run.assert_has_calls([
+                    mock.call(mock.ANY, 'cvs', 'add', '/a'),
+                    mock.call(mock.ANY, 'cvs', 'add', '/b'),
+                    mock.call(mock.ANY, 'cvs', 'add', '/dir'),
+                    mock.call(mock.ANY, 'cvs', 'add', '/dir/metoo'),
+                ])
+
     def test_addFiles(self):
         with mock.patch('gitcvs.git.shell.run'):
             self.cvs.addFiles(['/a', '/b', '/dir/metoo'])
