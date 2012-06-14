@@ -98,6 +98,7 @@ class Exporter(object):
         CVS.addDirectories(sorted(list(AddedDirs)))
         CVS.addFiles(sorted(list(AddedFiles)))
 
+        CVS.infoDiff()
         CVS.commit(GitMessages)
         Git.checkout(exportbranch)
         Git.mergeFastForward(gitbranch)

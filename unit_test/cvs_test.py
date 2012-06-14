@@ -83,6 +83,18 @@ class TestCVS(testutils.TestCase):
                 os.chdir.assert_any_call(os.getcwd())
                 os.chdir.assert_any_call('%s/repo/brnch' %self.cdir)
 
+    def test_infoDiff(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            with mock.patch.multiple('os', getcwd=mock.DEFAULT,
+                                           chdir=mock.DEFAULT):
+                self.cvs.infoDiff()
+                shell.run.assert_called_once_with(mock.ANY,
+                    'cvs', 'diff', error=False)
+                os.getcwd.assert_called_once_with()
+                self.assertEqual(os.chdir.call_count, 2)
+                os.chdir.assert_any_call(os.getcwd())
+                os.chdir.assert_any_call('%s/repo/brnch/Loc' %self.cdir)
+
     def test_update(self):
         with mock.patch('gitcvs.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,

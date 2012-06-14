@@ -75,6 +75,11 @@ class CVS(object):
             'cvs', 'checkout', '-d', self.pathbase, '-r', self.branch, self.location)
 
     @inCVSPATH
+    def infoDiff(self):
+        # cvs diff uses non-zero return codes for success
+        shell.run(self.log, 'cvs', 'diff', error=False)
+
+    @inCVSPATH
     def update(self):
         shell.run(self.log, 'cvs', 'update', '-d')
 
