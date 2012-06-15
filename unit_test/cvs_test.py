@@ -58,13 +58,13 @@ class TestCVS(testutils.TestCase):
         with mock.patch('gitcvs.git.shell.run'):
             self.cvs.export('targetdir')
             shell.run.assert_called_once_with(mock.ANY,
-                'cvs', 'export', '-d', 'targetdir', '-r', 'brnch', 'Some/Loc')
+                'cvs', 'export', '-kk', '-d', 'targetdir', '-r', 'brnch', 'Some/Loc')
             self.assertEqual(os.environ['CVSROOT'],
                 self.ctx.getCVSRoot('repo', 'johndoe'))
 
-    def test_cleanKeywords(self):
+    def test_disableLogKeyword(self):
         with mock.patch('gitcvs.git.shell.run'):
-            self.cvs.cleanKeywords(['a'])
+            self.cvs.disableLogKeyword(['a'])
             shell.run.assert_called_once_with(mock.ANY,
                 'sed', '-i', '-r', mock.ANY, 'a')
 
@@ -74,7 +74,7 @@ class TestCVS(testutils.TestCase):
                                            chdir=mock.DEFAULT):
                 self.cvs.checkout()
                 shell.run.assert_called_once_with(mock.ANY,
-                    'cvs', 'checkout', '-d', 'repo',
+                    'cvs', 'checkout', '-kk', '-d', 'repo',
                     '-r', 'brnch', 'Some/Loc')
                 self.assertEqual(os.environ['CVSROOT'],
                     self.ctx.getCVSRoot('repo', 'johndoe'))

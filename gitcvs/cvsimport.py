@@ -40,7 +40,7 @@ class Importer(object):
             raise RuntimeError("CVS branch '%s' for location '%s' contains no files"
                                %(CVS.branch, CVS.location))
         os.chdir(exportDir)
-        CVS.cleanKeywords(exportedFiles)
+        CVS.disableLogKeyword(exportedFiles)
 
         if not os.path.exists(repoDir):
             os.chdir(gitDir)

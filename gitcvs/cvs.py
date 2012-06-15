@@ -59,12 +59,11 @@ class CVS(object):
     @setCVSROOT
     def export(self, targetDir):
         shell.run(self.log,
-            'cvs', 'export', '-d', targetDir, '-r', self.branch, self.location)
+            'cvs', 'export', '-kk', '-d', targetDir, '-r', self.branch, self.location)
 
-    def cleanKeywords(self, fileList):
+    def disableLogKeyword(self, fileList):
         shell.run(self.log,
             'sed', '-i', '-r',
-            r's/\$(Author|Date|Header|Id|Name|Locker|RCSfile|Revision|Source|State):[^\$]*\$/$\1$/g;'
             r's/\$Log.*\$/OldLog:/g',
             *fileList)
 
@@ -72,7 +71,7 @@ class CVS(object):
     @inCVSDIR
     def checkout(self):
         shell.run(self.log,
-            'cvs', 'checkout', '-d', self.pathbase, '-r', self.branch, self.location)
+            'cvs', 'checkout', '-kk', '-d', self.pathbase, '-r', self.branch, self.location)
 
     @inCVSPATH
     def infoDiff(self):
