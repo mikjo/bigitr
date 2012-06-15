@@ -72,7 +72,10 @@ class Git(object):
         _, files = shell.read(self.log,
             'git', 'ls-files', '--exclude-standard', '-z')
         # --exclude-standard does not apply to .gitignore or .gitmodules
-        return [x for x in files.split('\0') if x and not '.git' in x]
+        # make sure that no .git metadata files are included in the
+        # content that might be exported to CVS
+        return [x for x in files.split('\0')
+                if x and not os.path.basename(x).startswith('.git')]
 
     def status(self):
         _, output = shell.read(self.log,

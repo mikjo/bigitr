@@ -73,7 +73,7 @@ class Exporter(object):
         CVSDirs = set(os.path.dirname(x) for x in CVSFileSet)
         AddedDirs = GitDirs - CVSDirs
 
-        if not GitFileSet - set(('.gitignore',)):
+        if not GitFileSet:
             # do not push an empty branch in order to avoid deleting a
             # whole CVS branch due to configuration failure
             raise RuntimeError("Not committing empty branch '%s'"

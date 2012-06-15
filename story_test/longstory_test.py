@@ -26,6 +26,8 @@ class TestStory(unittest.TestCase):
         os.makedirs(self.skeldir + '/m2')
         file(self.skeldir + '/m2/.gitignore', 'w').write(
             '*.jar\n*.o\n.cvsignore\n')
+        file(self.skeldir + '/m2/.gitattributes', 'w').write(
+            '* text\n')
         # outside the system: the "server" directories
         self.cvsroot = self.workdir + '/cvsroot'
         os.makedirs(self.cvsroot)
@@ -235,6 +237,11 @@ class TestStory(unittest.TestCase):
         # make sure that bad.jar WAS deleted from CVS when we exported
         self.assertFalse(os.path.exists(
             self.cvsdir + '/module2/b1/module2/bad.jar'))
+        # make sure that .gitignore and .gitattributes were not copied to CVS
+        self.assertFalse(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/.gitignore'))
+        self.assertFalse(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/.gitattributes'))
 
         # .gitignore primed from .cvsignore if it exists and no skeleton
         Gitm3 = git.Git(self.ctx, 'git/module3')

@@ -36,6 +36,14 @@ fashion.
   represented on a branch being exported from Git into CVS, those
   files will be deleted from the CVS branch when the Git branch
   is exported.
+* Files with names starting with ".git" will not be commited to CVS;
+  that file namespace is reserved for Git even for git metadata file
+  types that have not yet been created as of the time that this tool
+  was written.
+* It is recommended that only Git metadata files with names starting
+  with .git be included in "skeletons" used to populate empty
+  branches, because the protections against accidentally exporting
+  empty branches to CVS apply only to Git metadata files.
 
 There are two kinds of configuration files.
 * Application configuration: general behavior

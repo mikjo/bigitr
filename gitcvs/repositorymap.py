@@ -19,12 +19,12 @@
 # skeleton files are used only when creating a new cvs-* import branch.
 # Note that changing the skeleton between creating cvs-* import branches
 # will introduce merge conflicts when you merge cvs-* branches into
-# Git development branches.  Any skeleton files other than .gitignore
+# Git development branches.  Any skeleton files other than .git* files
 # will be included in the files exported from Git branches to CVS branches.
 # The normal use of a skeleton is to introduce a .gitignore file that is
-# different from .cvsignore; if there is no skeleton and there is a top
-# level .cvsignore file, new branches will include the .cvsignore as the
-# initial .gitignore contents.
+# different from .cvsignore and/or a .gitattributes file; if there is no
+# skeleton and there is a top-level .cvsignore file, new branches will
+# include the contents of .cvsignore as the initial .gitignore contents.
 #
 # For each git.<branch>, "export-<branch>" in Git is used to track what
 # on <branch> has been exported to CVS.  This branch never has anything
