@@ -177,7 +177,7 @@ class TestCVS(testutils.TestCase):
         with mock.patch('gitcvs.git.shell.run'):
             self.cvs.addFiles(['/a', '/b', '/dir/metoo'])
             shell.run.assert_called_once_with(mock.ANY,
-                'cvs', 'add', '/a', '/b', '/dir/metoo')
+                'cvs', 'add', '-kk', '/a', '/b', '/dir/metoo')
 
     def test_addFilesEmpty(self):
         with mock.patch('gitcvs.git.shell.run'):

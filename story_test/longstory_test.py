@@ -621,6 +621,24 @@ class TestStory(unittest.TestCase):
         self.assertTrue('$State$' in keywords)
         self.assertTrue('$Log:' not in keywords)
         self.assertTrue('OldLog:' in keywords)
+        # we need to add a new file in Git after the checkout is created
+        # in CVS, to test the -kk option to cvs add...
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  "echo '$Id' > k2; "
+                  'git add k2; '
+                  'git commit -a -m "add k2"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportBranches('git/module1', Git)
+        entries = file(self.cvsdir + '/module1/b1/module1/CVS/Entries'
+            ).readlines()
+        self.assertTrue([x for x in entries if 'k2' in x and '-kk' in x])
+        kw1 = file(self.cvsroot+'/module1/Attic/k2,v').read()
+        exp.exportBranches('git/module1', Git)
+        kw2 = file(self.cvsroot+'/module1/Attic/k2,v').read()
+        self.assertEqual(kw1, kw2)
 
     def test_lowlevel6(self):
         'test exporting git branch changes to cvs with nested new subdirs'

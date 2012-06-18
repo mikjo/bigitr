@@ -105,7 +105,7 @@ class CVS(object):
     @inCVSPATH
     def addFiles(self, fileNames):
         if fileNames:
-            shell.run(self.log, 'cvs', 'add', *fileNames)
+            shell.run(self.log, 'cvs', 'add', '-kk', *fileNames)
 
     @inCVSPATH
     def commit(self, message):
