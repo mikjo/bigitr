@@ -626,7 +626,7 @@ class TestStory(unittest.TestCase):
         os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
         os.system('cd %s/module1; '
                   'git checkout b1; '
-                  "echo '$Id' > k2; "
+                  "echo '$Id$' > k2; "
                   'git add k2; '
                   'git commit -a -m "add k2"; '
                   'git push --all; '
@@ -639,6 +639,55 @@ class TestStory(unittest.TestCase):
         exp.exportBranches('git/module1', Git)
         kw2 = file(self.cvsroot+'/module1/Attic/k2,v').read()
         self.assertEqual(kw1, kw2)
+
+    def test_lowlevel6lineEndingChangeWithCVSImport(self):
+        'test converting line endings only does not break cvs import'
+        self.unpack('TESTROOT.6.tar.gz')
+
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/newline', 'w').write('a\r\nb\r\n')
+        os.system('cd %s/module1; '
+                  'cvs add -ko newline; '
+                  'cvs commit -m "add newline"'
+                  %self.cvsco)
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout cvs-b1; '
+                  "echo 'newline binary' > .gitattributes; "
+                  'git add .gitattributes; '
+                  'git commit -a -m "change .gitattributes"; '
+                  'git push --all; '
+                  %self.gitco)
+        newline = file(self.cvsroot+'/module1/Attic/newline,v').read()
+        # there should only be two \r\n's in the ,v file
+        self.assertEqual(len(newline.split('\r\n')), 3)
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        # the carriage returns should have been preserved
+        self.assertEqual(os.stat(self.gitdir+'/module1/newline').st_size, 6)
+        os.system('cd %s/module1; '
+                  'git pull; '
+                  "echo 'newline text=auto' > .gitattributes; "
+                  'rm .git/index; '
+                  'git reset; '
+                  'git add -u; '
+                  'git add .gitattributes; '
+                  'git commit -a -m "add .gitattributes"; '
+                  'git push --all; '
+                  %self.gitco)
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        file(self.cvsco + '/module1/newline', 'w').write('a\nb\n')
+        os.system('cd %s/module1; '
+                  'cvs commit -m "change newline"'
+                  %self.cvsco)
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        self.assertEqual(os.stat(self.gitdir+'/module1/newline').st_size, 4)
 
     def test_lowlevel6(self):
         'test exporting git branch changes to cvs with nested new subdirs'

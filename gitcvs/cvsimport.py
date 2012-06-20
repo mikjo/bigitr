@@ -101,6 +101,11 @@ class Importer(object):
             Git.infoStatus()
             Git.infoDiff()
             Git.addAll()
+
+        # Git.addAll() will have regularized line ending differences,
+        # and in case that is the only change, we need to check again
+        # on status
+        if Git.status():
             # FIXME: try to create a commit message that includes all
             # the CVS commit messages since the previous commit, de-duplicated
             Git.commit('import from CVS as of %s' %time.asctime())
