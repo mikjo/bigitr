@@ -159,7 +159,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
         with mock.patch('gitcvs.git.shell.run'):
             self.git.checkout('b')
             shell.run.assert_called_once_with(mock.ANY,
-                'git', 'checkout', 'b')
+                'git', 'checkout', '-f', 'b')
 
     def test_listContentFiles(self):
         with mock.patch('gitcvs.git.shell.read') as r:

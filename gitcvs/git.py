@@ -66,7 +66,10 @@ class Git(object):
         shell.run(self.log, 'git', 'rm', '-rf', '.', error=False)
 
     def checkout(self, branch):
-        shell.run(self.log, 'git', 'checkout', branch)
+        # line ending normalization can cause checkout to fail to
+        # change branch without -f even though there are no other
+        # changes in the working directory
+        shell.run(self.log, 'git', 'checkout', '-f', branch)
 
     def listContentFiles(self):
         _, files = shell.read(self.log,
