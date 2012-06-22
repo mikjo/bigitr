@@ -1,28 +1,39 @@
-This tool synchronizes Git and CVS repositories in an asynchronous
-fashion.
+This tool copies content between Git and CVS repositories in an
+asynchronous and asymmetric fashion.
+
+The flow is conceptually similar to Git's flow for synchronizing with
+a remote repository.  For example, the local master branch is pushed
+to the master branch on the origin repository, pulled from the remote
+origin master branch to the local origin/master reference, and then
+the local origin/master reference is merged onto the local master
+branch.  Similarly, the Git master branch might be exported to a CVS
+branch current-dev, which is then imported into a Git branch named
+cvs-current-dev, which then might be merged back into the Git master
+branch.
 
 * This tool commits to CVS and pushes to remote Git repositories.
   Do backups, and test configuration initially with throwaway
-  copies of CVS and Git repositories.
+  copies of CVS and Git repositories before you put this tool into
+  production use.
+
 * It exports branches in Git into branches in CVS.
-* It will not touch the CVS trunk (at least for now).
+
+* It will not touch the CVS trunk (at least at this time).
+
+* It will not synchronize only parts of a CVS sub/module.  It is
+  all or nothing: for any particular sub/module, any files not in
+  the Git branch being exported to CVS will be DELETED from that
+  branch in that CVS sub/module.
+
 * It imports branches from CVS into special import branches (with names
   starting with "cvs-" in Git.
+
 * After committing to branches (not including fast-forwarding the
   export- branches), it will automatically attempt to merge changes
-  into other specified branches.  If any merges are successful, those
-  merges themselves may trigger other merge operations.
-* It is reasonable to configure no automatic merging at all.  Be,
-  aware that if you have configured the Git "master" branch to be
-  exported to an existing CVS branch, then you should populate the
-  Git "master" branch before exporting.  In most cases, a master
-  branch should be a merge target at least for the initial import,
-  even if the merge target is later disabled in favor of merging
-  changes manually.
-* An attempt to export an empty Git branch to a CVS branch will
-  raise an exception rather than deleting all the files on the CVS
-  branch.  If you really want to delete all the files on the CVS
-  branch, do it by hand.
+  into other explicitly-specified branches.  If any merges are
+  successful, those merges themselves may trigger other merge
+  operations.
+
 * Branches in the Git repositories with names starting with "cvs-"
   and "export-" are reserved to be written only by this tool.
   These branches are pushed to the origin repository so that local
@@ -31,15 +42,31 @@ fashion.
   but different application configuration (local directories).
   However, no locking is attempted, so if two users run it at the
   same time, the results are undefined.
+
+* It is reasonable to configure no automatic merging at all.  Be,
+  aware that if you have configured the Git "master" branch to be
+  exported to an existing CVS branch, then you should populate the
+  Git "master" branch before exporting.  In most cases, a master
+  branch should be a merge target at least for the initial import,
+  even if the merge target is later disabled in favor of merging
+  changes manually.
+
+* An attempt to export an empty Git branch to a CVS branch will
+  raise an exception rather than deleting all the files on the CVS
+  branch.  If you really want to delete all the files on the CVS
+  branch, do it by hand.
+
 * Files in CVS ignored by .gitignore will not be committed to the
   corresponding Git branches, and if those .gitignore changes are
   represented on a branch being exported from Git into CVS, those
   files will be deleted from the CVS branch when the Git branch
-  is exported.
+  is exported to CVS.
+
 * Files with names starting with ".git" will not be commited to CVS;
-  that file namespace is reserved for Git even for git metadata file
+  that file namespace is reserved for Git even for Git metadata file
   types that have not yet been created as of the time that this tool
   was written.
+
 * It is recommended that only Git metadata files with names starting
   with .git be included in "skeletons" used to populate empty
   branches, because the protections against accidentally exporting
