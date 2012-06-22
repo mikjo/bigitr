@@ -74,7 +74,7 @@ class TestCVS(testutils.TestCase):
                                            chdir=mock.DEFAULT):
                 self.cvs.checkout()
                 shell.run.assert_called_once_with(mock.ANY,
-                    'cvs', 'checkout', '-kk', '-d', 'repo',
+                    'cvs', 'checkout', '-kk', '-d', 'Loc',
                     '-r', 'brnch', 'Some/Loc')
                 self.assertEqual(os.environ['CVSROOT'],
                     self.ctx.getCVSRoot('repo', 'johndoe'))

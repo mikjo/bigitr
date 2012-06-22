@@ -39,7 +39,7 @@ class CVS(object):
         self.ctx = ctx
         self.location = self.ctx.getCVSPath(repo)
         self.path = ctx.getCVSBranchCheckoutDir(repo, branch)
-        self.pathbase = ctx.getRepositoryName(repo)
+        self.pathbase = os.path.basename(self.path)
         self.branch = branch
         self.log = self.ctx.logs[repo]
         self.root = ctx.getCVSRoot(repo, username)
