@@ -101,7 +101,7 @@ class TestCVS(testutils.TestCase):
                                            chdir=mock.DEFAULT):
                 self.cvs.update()
                 shell.run.assert_called_once_with(mock.ANY,
-                    'cvs', 'update', '-d')
+                    'cvs', 'update', '-kk', '-d')
                 os.getcwd.assert_called_once_with()
                 self.assertEqual(os.chdir.call_count, 2)
                 os.chdir.assert_any_call(os.getcwd())

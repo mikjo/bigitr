@@ -80,7 +80,7 @@ class CVS(object):
 
     @inCVSPATH
     def update(self):
-        shell.run(self.log, 'cvs', 'update', '-d')
+        shell.run(self.log, 'cvs', 'update', '-kk', '-d')
 
     @inCVSPATH
     def deleteFiles(self, fileNames):
