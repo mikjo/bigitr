@@ -10,68 +10,44 @@ class Exporter(object):
         self.ctx = ctx
         self.username = username
 
-    @staticmethod
-    def trackBranch(Git, branch, branches, repository, createBranch=False):
-        if branch not in branches:
-            if 'remotes/origin/' + branch in branches:
-                Git.trackBranch(branch)
-            else:
-                if not createBranch:
-                    raise KeyError('branch %s not found for repository %s'
-                                   %(branch, repository))
-                Git.newBranch(branch)
-
-
     def exportAll(self):
         for repository in self.ctx.getRepositories():
             Git = git.Git(self.ctx, repository)
             self.exportBranches(repository, Git)
 
     def exportBranches(self, repository, Git):
-        for gitbranch, cvsbranch, exportbranch in self.ctx.getExportBranchMaps(repository):
+        for gitbranch, cvsbranch, exportbranch in self.ctx.getExportBranchMaps(
+                repository):
             CVS = cvs.CVS(self.ctx, repository, cvsbranch, self.username)
             self.exportgit(repository, Git, CVS, gitbranch, exportbranch)
 
     def exportgit(self, repository, Git, CVS, gitbranch, exportbranch):
         gitDir = self.ctx.getGitDir()
-        cvsDir = os.path.dirname(CVS.path)
         repoName = self.ctx.getRepositoryName(repository)
         repoDir = '/'.join((gitDir, repoName))
+        exportbranches = set((exportbranch, 'remotes/origin/'+exportbranch))
 
-        if not os.path.exists(repoDir):
-            os.chdir(gitDir)
-            Git.clone(self.ctx.getGitRef(repository))
-        if not os.path.exists(cvsDir):
-            os.makedirs(cvsDir)
-        if os.path.exists(CVS.path):
-            CVS.update()
+        self.cloneGit(Git, repository, repoDir)
+
+        branches = self.prepareGitClone(Git, gitbranch, repository)
+        if (branches - exportbranches) == branches:
+            GitMessages = 'Initial export to CVS from git branch %s' %gitbranch
+            self.trackBranch(Git, exportbranch, branches, repository, createBranch=True)
         else:
-            CVS.checkout()
-        CVSList = CVS.listContentFiles()
-        CVSFileSet = set(CVSList)
+            self.trackBranch(Git, exportbranch, branches, repository, createBranch=False)
+            GitMessages = Git.logmessages(exportbranch, gitbranch)
+            if GitMessages == '':
+                # There have been no changes in Git since the last export,
+                # so there is nothing to export. (If CVS shows changes,
+                # the changes should be due to normalization such as
+                # populated CVS keywords checked into Git.)
+                return
 
-        os.chdir(repoDir)
-        Git.fetch()
-        # clean up after any garbage left over from previous runs so
-        # that we can change branches
-        Git.pristine()
-        branches = Git.branches()
-        self.trackBranch(Git, gitbranch, branches, repository, createBranch=False)
-        Git.checkout(gitbranch)
-        Git.mergeFastForward('origin/' + gitbranch)
-        self.trackBranch(Git, exportbranch, branches, repository, createBranch=True)
+        # wait until we think there are changes to export before checking
+        # out from CVS, since this checkout/update can be slow
+        self.checkoutCVS(CVS)
 
-        GitList = Git.listContentFiles()
-        GitFileSet = set(GitList)
-        DeletedFiles = CVSFileSet - GitFileSet
-        # even if .cvsignore files are deleted in git, do not remove them in CVS
-        DeletedFiles -= set(x for x in DeletedFiles
-                            if x.split('/')[-1] == '.cvsignore')
-        AddedFiles = GitFileSet - CVSFileSet
-        CommonFiles = GitFileSet.intersection(CVSFileSet)
-        GitDirs = set(os.path.dirname(x) for x in GitFileSet)
-        CVSDirs = set(os.path.dirname(x) for x in CVSFileSet)
-        AddedDirs = GitDirs - CVSDirs
+        GitFileSet, DeletedFiles, AddedFiles, CommonFiles, AddedDirs = self.calculateFileSets(CVS, Git)
 
         if not GitFileSet:
             # do not push an empty branch in order to avoid deleting a
@@ -79,12 +55,6 @@ class Exporter(object):
             raise RuntimeError("Not committing empty branch '%s'"
                                " from git branch '%s'" %(CVS.branch, gitbranch))
 
-        GitMessages = Git.logmessages(exportbranch, gitbranch)
-        if GitMessages == '':
-            # if there are no differences this is the first export,
-            # or there have been no changes since the last export and
-            # so no commit will actually be generated
-            GitMessages = 'Initial export to CVS from git branch %s' %gitbranch
         prefix = self.ctx.getBranchPrefix(repository, CVS.branch)
         if prefix:
             GitMessages = '\n\n'.join((prefix, GitMessages))
@@ -103,3 +73,57 @@ class Exporter(object):
         Git.checkout(exportbranch)
         Git.mergeFastForward(gitbranch)
         Git.push('origin', exportbranch)
+
+    def cloneGit(self, Git, repository, repoDir):
+        if not os.path.exists(repoDir):
+            os.chdir(self.ctx.getGitDir())
+            Git.clone(self.ctx.getGitRef(repository))
+        os.chdir(repoDir)
+
+    def checkoutCVS(self, CVS):
+        cvsDir = os.path.dirname(CVS.path)
+        if not os.path.exists(cvsDir):
+            os.makedirs(cvsDir)
+        if os.path.exists(CVS.path):
+            CVS.update()
+        else:
+            CVS.checkout()
+
+    def prepareGitClone(self, Git, gitbranch, repository):
+        Git.fetch()
+        # clean up after any garbage left over from previous runs so
+        # that we do not copy files not managed, at least on this branch,
+        # into CVS
+        Git.pristine()
+        branches = Git.branches()
+        self.trackBranch(Git, gitbranch, branches, repository, createBranch=False)
+        Git.checkout(gitbranch)
+        Git.mergeFastForward('origin/' + gitbranch)
+        return branches
+
+    def calculateFileSets(self, CVS, Git):
+        CVSList = CVS.listContentFiles()
+        CVSFileSet = set(CVSList)
+        GitList = Git.listContentFiles()
+        GitFileSet = set(GitList)
+        DeletedFiles = CVSFileSet - GitFileSet
+        # even if .cvsignore files are deleted in git, do not remove them in CVS
+        DeletedFiles -= set(x for x in DeletedFiles
+                            if x.split('/')[-1] == '.cvsignore')
+        AddedFiles = GitFileSet - CVSFileSet
+        CommonFiles = GitFileSet.intersection(CVSFileSet)
+        GitDirs = set(os.path.dirname(x) for x in GitFileSet)
+        CVSDirs = set(os.path.dirname(x) for x in CVSFileSet)
+        AddedDirs = GitDirs - CVSDirs
+        return GitFileSet, DeletedFiles, AddedFiles, CommonFiles, AddedDirs
+
+    @staticmethod
+    def trackBranch(Git, branch, branches, repository, createBranch=False):
+        if branch not in branches:
+            if 'remotes/origin/' + branch in branches:
+                Git.trackBranch(branch)
+            else:
+                if not createBranch:
+                    raise KeyError('branch %s not found for repository %s'
+                                   %(branch, repository))
+                Git.newBranch(branch)
