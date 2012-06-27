@@ -105,3 +105,7 @@ passes arbitrarily many file names on the command line.  This limits
 it to working on relatively recent Linux kernels (2.6.23 and later)
 for large repositories.  At least Python 2.5 is required (due to the
 use of "with").
+
+This tool requires nose (may be packaged as python-nose), coverage
+(may be packaged as python-coverage), and mock (may be packaged as
+python-mock).
