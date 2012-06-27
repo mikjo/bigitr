@@ -128,3 +128,11 @@ class Git(object):
         _, messages = shell.read(self.log,
             'git', 'log', '%s..%s' %(since, until))
         return messages
+
+    def runPreHooks(self, repository, branch):
+        for hook in self.ctx.getGitPreHooks(repository, branch):
+            shell.run(self.log, *hook)
+
+    def runPostHooks(self, repository, branch):
+        for hook in self.ctx.getGitPostHooks(repository, branch):
+            shell.run(self.log, *hook)

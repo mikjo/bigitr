@@ -11,10 +11,18 @@
 # git.<branch> = <cvsbranch> # Git <branch> exports to "<cvsbranch>" in CVS
 # merge.<sourcebranch> = <targetbranch> <targetbranch> # Merge <sourcebranch> onto <targetbranch>(es)
 # prefix.<branch> = <message> # prefix for CVS commit messages on <branch>
+# prehook.git = <command> <args> # hook to run before committing to Git
+# prehook.cvs = <command> <args> # hook to run before committing to CVS
+# posthook.git = <command> <args> # hook to run after committing to Git
+# posthook.cvs = <command> <args> # hook to run after committing to CVS
+# prehook.git.<branch> = <command> <args> # hook to run before committing to Git branch <branch>
+# prehook.cvs.<branch> = <command> <args> # hook to run before committing to CVS branch <branch>
+# posthook.git.<branch> = <command> <args> # hook to run after committing to Git branch <branch>
+# posthook.cvs.<branch> = <command> <args> # hook to run after committing to CVS branch <branch>
 # email = <address> <address> # errors/warnings emailed to these addresses
 #
-# gitroot, cvsroot, email, and skeleton may be in a GLOBAL section, which
-# will be overridden by any specific per-repository values.
+# gitroot, cvsroot, email, skeleton, and hooks may be in a GLOBAL section,
+# which will be overridden by any specific per-repository values.
 #
 # skeleton files are used only when creating a new cvs-* import branch.
 # Note that changing the skeleton between creating cvs-* import branches
@@ -47,6 +55,28 @@
 # merge failures from the preimport, then the git branch export will be
 # aborted.
 #
+# All hooks are run in the obvious directory; git hooks are run in a
+# git working directory with the specified branch checked out, and
+# cvs hooks are run in a cvs checkout in which the specified branch
+# is a sticky tag.  The pre hooks are run before a commit operation,
+# and post hooks are run after all post-commit operations are complete;
+# for example, the cvs post hooks are run after fast-forwarding the
+# export- branch.  Git post hooks are run before merging downstream
+# branches, and Git post hooks (but not pre hooks at this time; this
+# may be changed later) are run for each merge target as well as for
+# cvs import branches.
+#l
+# Per-branch hooks (e.g. prehook.git.master) are run in addition to
+# general hooks (e.g. prehook.git) and the general hooks are run
+# first.
+#
+# Hooks that modify Git state are generally discouraged.  Committing
+# may invalidate invariants and cause unexpected operation.  Changing
+# branches will almost certainly break.  The main use for pre hooks
+# is to normalize the contents of files to be committed in ways that
+# are not implemented as specific configuration.  The main use for
+# post hooks is arbitrary notification.
+#
 # Can later extend if necessary to add branch-specific skeleton.branchname
 # and email.branchname to override defaults.
 #
@@ -54,6 +84,7 @@
 
 import config
 import os
+import shlex
 
 class RepositoryConfig(config.Config):
     def __init__(self, configFileName):
@@ -126,6 +157,31 @@ class RepositoryConfig(config.Config):
         return dict((x[6:], set(self.get(repository, x).strip().split()))
                     for x in sorted(self.options(repository))
                     if x.startswith('merge.'))
+
+    def getHook(self, type, when, repository):
+        return self.getDefault(repository, when+'hook.'+type, error=False)
+
+    def getHookBranch(self, type, when, repository, branch):
+        return self.getDefault(repository, when+'hook.'+type+'.'+branch,
+                               error=False)
+
+    def getHooksBranch(self, type, when, repository, branch):
+        return [shlex.split(x) for x in
+                (self.getHook(type, when, repository),
+                 self.getHookBranch(type, when, repository, branch))
+                if x]
+
+    def getGitPreHooks(self, repository, branch):
+        return self.getHooksBranch('git', 'pre', repository, branch)
+
+    def getGitPostHooks(self, repository, branch):
+        return self.getHooksBranch('git', 'post', repository, branch)
+
+    def getCVSPreHooks(self, repository, branch):
+        return self.getHooksBranch('cvs', 'pre', repository, branch)
+
+    def getCVSPostHooks(self, repository, branch):
+        return self.getHooksBranch('cvs', 'post', repository, branch)
 
     def getEmail(self, repository):
         email = self.getDefault(repository, 'email', error=False)

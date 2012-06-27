@@ -72,6 +72,15 @@ branch.
   branches, because the protections against accidentally exporting
   empty branches to CVS apply only to Git metadata files.
 
+* There are pre-commit and post-commit hooks for both Git and CVS,
+  in order to implement normalization rules, notification, and so
+  forth.  These commands are run with the current working directory
+  set to the Git working directory or CVS checkout.  These can be
+  specified for all repositories or for a single repository, and
+  for all branches or only individual branches.  The arguments are
+  included in the configuration using shell syntax; no extra
+  arguments are added.
+
 There are two kinds of configuration files.
 * Application configuration: general behavior
 * Repository configuration: specific to a Git repository

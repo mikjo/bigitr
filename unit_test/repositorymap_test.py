@@ -13,6 +13,7 @@ class TestRepositoryConfig(testutils.TestCase):
 [GLOBAL]
 gitroot = git@host2
 cvsroot = @server2:/path
+prehook.git = gitprehook arg
 [Path/To/Git/repository]
 gitroot = git@host
 cvsroot = @servername:/path
@@ -26,11 +27,17 @@ git.a1 = a1
 prefix.a2 = cvs-a2-prefix
 merge.cvs-a2 = a2 master
 merge.cvs-a1 = a1
+prehook.git.master = gitmasterprehook
+prehook.git.a1 = gita1prehook
+posthook.git.master = gitmasterposthook
+posthook.git = gitposthook
+posthook.cvs.cvs-a1 = cvsa1posthook
 email = foo@bar baz@blah
 
 [Path/To/Git/repo2]
 cvspath = Path/To/CVS/directory
 git.master = a2
+prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
 ''')
         self.cfg = repositorymap.RepositoryConfig(self.cf)
 
@@ -121,6 +128,32 @@ git.master = a2
     def test_getMergeBranchMapsEmpty(self):
         self.assertEqual(self.cfg.getMergeBranchMaps('Path/To/Git/repo2'),
                          {})
+
+    def test_getGitPreHooks(self):
+        self.assertEqual(
+            self.cfg.getGitPreHooks('Path/To/Git/repository', 'master'),
+            [['gitprehook', 'arg'], ['gitmasterprehook']])
+        self.assertEqual(
+            self.cfg.getGitPreHooks('Path/To/Git/repository', 'a1'),
+            [['gitprehook', 'arg'], ['gita1prehook']])
+
+    def test_getGitPostHooks(self):
+        self.assertEqual(
+            self.cfg.getGitPostHooks('Path/To/Git/repository', 'master'),
+            [['gitposthook'], ['gitmasterposthook']])
+
+    def test_getCVSPreHooks(self):
+        self.assertEqual(
+            self.cfg.getCVSPreHooks('Path/To/Git/repository', 'cvs-a1'),
+            [])
+        self.assertEqual(
+            self.cfg.getCVSPreHooks('Path/To/Git/repo2', 'cvs-a2'),
+            [['cvsa2prehook', 'quoted arg']])
+
+    def test_getCVSPostHooks(self):
+        self.assertEqual(
+            self.cfg.getCVSPostHooks('Path/To/Git/repository', 'cvs-a1'),
+            [['cvsa1posthook']])
 
     def test_getEmail(self):
         self.assertEqual(self.cfg.getEmail('Path/To/Git/repository'),

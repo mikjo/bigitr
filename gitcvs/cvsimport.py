@@ -98,11 +98,13 @@ class Importer(object):
         os.chdir(repoDir)
         if Git.status():
             # there is some change to commit
+            Git.runPreHooks(repository, gitbranch)
             Git.infoStatus()
             Git.infoDiff()
             Git.addAll()
 
         # Git.addAll() will have regularized line ending differences,
+        # Git.runPreHooks may have done other normalization,
         # and in case that is the only change, we need to check again
         # on status
         if Git.status():
@@ -110,6 +112,7 @@ class Importer(object):
             # the CVS commit messages since the previous commit, de-duplicated
             Git.commit('import from CVS as of %s' %time.asctime())
             Git.push('origin', gitbranch)
+            Git.runPostHooks(repository, gitbranch)
 
         # try to merge downstream branches even if there was nothing to
         # commit, because a merge conflict might have been resolved
@@ -138,6 +141,7 @@ class Importer(object):
                 success = False
             else:
                 Git.push('origin', target)
+                Git.runPostHooks(repository, target)
                 rc = self.merge(repository, Git, target)
                 if not rc:
                     success = False

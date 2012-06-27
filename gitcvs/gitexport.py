@@ -68,11 +68,17 @@ class Exporter(object):
         CVS.addDirectories(sorted(list(AddedDirs)))
         CVS.addFiles(sorted(list(AddedFiles)))
 
+        # before infoDiff so that changes are represented in the infoDiff
+        CVS.runPreHooks(repository)
+
         CVS.infoDiff()
         CVS.commit(GitMessages)
         Git.checkout(exportbranch)
         Git.mergeFastForward(gitbranch)
         Git.push('origin', exportbranch)
+
+        # posthooks only after successfully pushing export- merge to origin
+        CVS.runPostHooks(repository)
 
     def cloneGit(self, Git, repository, repoDir):
         if not os.path.exists(repoDir):

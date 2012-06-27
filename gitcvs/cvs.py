@@ -116,3 +116,13 @@ class CVS(object):
         finally:
             os.remove(name)
             os.close(fd)
+
+    @inCVSPATH
+    def runPreHooks(self, repository):
+        for hook in self.ctx.getCVSPreHooks(repository, self.branch):
+            shell.run(self.log, *hook)
+
+    @inCVSPATH
+    def runPostHooks(self, repository):
+        for hook in self.ctx.getCVSPostHooks(repository, self.branch):
+            shell.run(self.log, *hook)

@@ -8,7 +8,12 @@ class TestGit(testutils.TestCase):
     def setUp(self):
         with mock.patch('gitcvs.log.Log') as mocklog:
             appConfig = StringIO('[global]\nlogdir = /logs\n')
-            repConfig = StringIO('[repo]\n')
+            repConfig = StringIO('[repo]\n'
+                                 'prehook.git = precommand arg\n'
+                                 'posthook.git = postcommand arg\n'
+                                 'prehook.git.brnch = precommand brnch\n'
+                                 'posthook.git.brnch = postcommand brnch\n'
+                                 '\n')
             self.ctx = context.Context(appConfig, repConfig)
             self.git = git.Git(self.ctx, 'repo')
             self.mocklog = mocklog()
@@ -294,3 +299,19 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             shell.read.assert_called_once_with(mock.ANY,
                 'git', 'log', 'since..until')
             self.assertEqual(msg, 'a message\n')
+
+    def test_runPreHooks(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.git.runPreHooks('repo', 'brnch')
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'precommand', 'arg'),
+                mock.call(mock.ANY, 'precommand', 'brnch'),
+            ])
+
+    def test_runPostHooks(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.git.runPostHooks('repo', 'brnch')
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'postcommand', 'arg'),
+                mock.call(mock.ANY, 'postcommand', 'brnch'),
+            ])

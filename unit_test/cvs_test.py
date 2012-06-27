@@ -25,7 +25,12 @@ class TestCVS(testutils.TestCase):
                                  'cvsdir = %s\n' %(self.dir, self.cdir))
             repConfig = StringIO('[repo]\n'
                                  'cvsroot = asdf\n'
-                                 'cvspath = Some/Loc')
+                                 'cvspath = Some/Loc\n'
+                                 'prehook.cvs = precommand arg\n'
+                                 'posthook.cvs = postcommand arg\n'
+                                 'prehook.cvs.brnch = precommand brnch\n'
+                                 'posthook.cvs.brnch = postcommand brnch\n'
+                                 '\n')
             self.ctx = context.Context(appConfig, repConfig)
             self.cvs = cvs.CVS(self.ctx, 'repo', 'brnch', 'johndoe')
             self.mocklog = mocklog()
@@ -198,3 +203,19 @@ class TestCVS(testutils.TestCase):
                         'cvs', 'commit', '-r', 'brnch', '-R', '-F', '/notThere')
                     mockos['remove'].assert_called_once_with('/notThere')
                     mockos['close'].assert_called_once_with(123456789)
+
+    def test_runPreHooks(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.cvs.runPreHooks('repo')
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'precommand', 'arg'),
+                mock.call(mock.ANY, 'precommand', 'brnch'),
+            ])
+
+    def test_runPostHooks(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.cvs.runPostHooks('repo')
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'postcommand', 'arg'),
+                mock.call(mock.ANY, 'postcommand', 'brnch'),
+            ])

@@ -478,6 +478,17 @@ class TestStory(unittest.TestCase):
         # note: not merging b1 onto master on purpose for a test case
         # difference; in normal use, b1 would probably be merged onto master
 
+        # test scripts firing correctly on merge
+        scriptdir = self.workdir + '/script'
+        os.makedirs(scriptdir)
+        file(scriptdir + '/gitpost', 'w').write('\n'.join((
+            '#!/bin/sh',
+            r"git branch | grep '^\*' | sed 's/.*/BRANCHES: \0/g'"
+            '',
+        )))
+        os.chmod(scriptdir + '/gitpost', 0755)
+        self.ctx._rm.set('GLOBAL', 'posthook.git', scriptdir+'/gitpost')
+
         self.unpack('TESTROOT.5.tar.gz')
         exp = gitexport.Exporter(self.ctx, 'johndoe')
         imp = cvsimport.Importer(self.ctx, 'johndoe')
@@ -565,6 +576,27 @@ class TestStory(unittest.TestCase):
         os.system('cd %s/module1; git checkout cvs-b2; git pull' %self.gitco)
         self.assertEqual(file(self.gitco + '/module1/cascade').read(),
                               'please cascade\n')
+
+        # Test that the git hook always fired all the times it should have for merge
+        self.assertEqual(
+            [x.strip() for x in file(Git.log.thislog).readlines()
+             if x.startswith('BRANCHES:')],
+            ['BRANCHES: * cvs-b1',
+             'BRANCHES: * b1',
+             'BRANCHES: * b2',
+             'BRANCHES: * master',
+             'BRANCHES: * cvs-b1',
+             'BRANCHES: * b1',
+             'BRANCHES: * b2',
+             'BRANCHES: * b1',
+             'BRANCHES: * b2',
+             'BRANCHES: * master',
+             'BRANCHES: * b1',
+             'BRANCHES: * b2',
+             'BRANCHES: * master',
+             'BRANCHES: * cvs-b2',
+             'BRANCHES: * b2',
+             'BRANCHES: * master'])
 
         self.pack('TESTROOT.6.tar.gz')
 
@@ -688,6 +720,131 @@ class TestStory(unittest.TestCase):
                   %self.cvsco)
         imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
         self.assertEqual(os.stat(self.gitdir+'/module1/newline').st_size, 4)
+
+    def test_lowlevel6lineEndingChangeByHookNormalization(self):
+        'test converting line endings by hooks that normalize'
+        self.unpack('TESTROOT.6.tar.gz')
+
+        scriptdir = self.workdir + '/script'
+        os.makedirs(scriptdir)
+        file(scriptdir + '/crnl', 'w').write('\n'.join((
+            '#!/bin/sh -x',
+            r"sed -i -r 's/\r//' newline",
+            '',
+        )))
+        os.chmod(scriptdir + '/crnl', 0755)
+
+        self.ctx._rm.set('git/module1', 'prehook.git.cvs-b1', scriptdir+'/crnl')
+        self.ctx._rm.set('git/module1', 'prehook.cvs.b2', scriptdir+'/crnl')
+
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/newline', 'w').write('a\r\nb\r\n')
+        os.system('cd %s/module1; '
+                  'cvs add -ko newline; '
+                  'cvs commit -m "add newline"'
+                  %self.cvsco)
+
+        newline = file(self.cvsroot+'/module1/Attic/newline,v').read()
+        # there should only be two \r\n's in the ,v file
+        self.assertEqual(len(newline.split('\r\n')), 3)
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        # the hook should have normalized the newlines
+        self.assertEqual(os.stat(self.gitdir+'/module1/newline').st_size, 4)
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        file(self.gitco + '/module1/newline', 'w').write('a\r\nb\r\n')
+        os.system('cd %s/module1; '
+                  'git checkout master; '
+                  "echo 'newline binary' > .gitattributes; "
+                  'git add .gitattributes newline; '
+                  'git commit -a -m "change .gitattributes"; '
+                  'git push --all; '
+                  %self.gitco)
+        self.assertEqual(os.stat(self.gitco+'/module1/newline').st_size, 6)
+
+        exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
+        self.assertEqual(os.stat(self.cvsdir+'/module1/b2/module1/newline').st_size, 4)
+
+    def test_lowlevel6RunAllHookTypes(self):
+        'test running all the types of hooks'
+        self.unpack('TESTROOT.6.tar.gz')
+
+        scriptdir = self.workdir + '/script'
+        os.makedirs(scriptdir)
+
+        file(scriptdir + '/gitpre', 'w').write('\n'.join((
+            '#!/bin/sh',
+            r"git branch | grep '^\*' | sed 's/.*/CMP PREBRANCHES: \0/g'"
+            '',
+        )))
+        os.chmod(scriptdir + '/gitpre', 0755)
+
+        file(scriptdir + '/gitpost', 'w').write('\n'.join((
+            '#!/bin/sh',
+            r"git branch | grep '^\*' | sed 's/.*/CMP POSTBRANCHES: \0/g'"
+            '',
+        )))
+        os.chmod(scriptdir + '/gitpost', 0755)
+
+        file(scriptdir + '/cvspre', 'w').write('\n'.join((
+            '#!/bin/sh',
+            'echo "CMP CVSPRE: ${PWD}"'
+            '',
+        )))
+        os.chmod(scriptdir + '/cvspre', 0755)
+        file(scriptdir + '/cvspost', 'w').write('\n'.join((
+            '#!/bin/sh',
+            'echo "CMP CVSPOST: ${PWD}"'
+            '',
+        )))
+        os.chmod(scriptdir + '/cvspost', 0755)
+
+        self.ctx._rm.set('GLOBAL', 'prehook.git', scriptdir+'/gitpre')
+        self.ctx._rm.set('GLOBAL', 'prehook.cvs', scriptdir+'/cvspre')
+        self.ctx._rm.set('GLOBAL', 'posthook.git', scriptdir+'/gitpost')
+        self.ctx._rm.set('GLOBAL', 'posthook.cvs', scriptdir+'/cvspost')
+
+        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/trigger', 'w').write('trigger')
+        os.system('cd %s/module1; '
+                  'cvs add trigger; '
+                  'cvs commit -m "add trigger"'
+                  %self.cvsco)
+
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout master; '
+                  'echo trigger > trigger; '
+                  'git add trigger; '
+                  'git commit -a -m "add trigger"; '
+                  'git push --all; '
+                  %self.gitco)
+
+        exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
+
+        self.assertEqual(
+            [x.strip() for x in file(Git.log.thislog).readlines()
+             if x.startswith('CMP ')],
+            ['CMP PREBRANCHES: * cvs-b1',
+             'CMP POSTBRANCHES: * cvs-b1',
+             'CMP CVSPRE: %s/module1/b2/module1' % self.cvsdir,
+             'CMP CVSPOST: %s/module1/b2/module1' % self.cvsdir])
 
     def test_lowlevel6(self):
         'test exporting git branch changes to cvs with nested new subdirs'
