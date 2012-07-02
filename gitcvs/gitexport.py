@@ -25,17 +25,16 @@ class Exporter(object):
         gitDir = self.ctx.getGitDir()
         repoName = self.ctx.getRepositoryName(repository)
         repoDir = '/'.join((gitDir, repoName))
-        exportbranches = set((exportbranch, 'remotes/origin/'+exportbranch))
+        originExportBranch = 'remotes/origin/'+exportbranch
+        exportbranches = set((exportbranch, originExportBranch))
 
         self.cloneGit(Git, repository, repoDir)
 
         branches = self.prepareGitClone(Git, gitbranch, repository)
         if (branches - exportbranches) == branches:
             GitMessages = 'Initial export to CVS from git branch %s' %gitbranch
-            self.trackBranch(Git, exportbranch, branches, repository, createBranch=True)
         else:
-            self.trackBranch(Git, exportbranch, branches, repository, createBranch=False)
-            GitMessages = Git.logmessages(exportbranch, gitbranch)
+            GitMessages = Git.logmessages(originExportBranch, gitbranch)
             if GitMessages == '':
                 # There have been no changes in Git since the last export,
                 # so there is nothing to export. (If CVS shows changes,
@@ -59,7 +58,8 @@ class Exporter(object):
         if prefix:
             GitMessages = '\n\n'.join((prefix, GitMessages))
 
-        Git.infoDiff(exportbranch, gitbranch)
+        if originExportBranch in branches:
+            Git.infoDiff(originExportBranch, gitbranch)
 
         CVS.deleteFiles(sorted(list(DeletedFiles)))
         CVS.copyFiles(repoDir, sorted(list(CommonFiles.union(AddedFiles))))
@@ -73,9 +73,7 @@ class Exporter(object):
 
         CVS.infoDiff()
         CVS.commit(GitMessages)
-        Git.checkout(exportbranch)
-        Git.mergeFastForward(gitbranch)
-        Git.push('origin', exportbranch)
+        Git.push('origin', gitbranch, exportbranch)
 
         # posthooks only after successfully pushing export- merge to origin
         CVS.runPostHooks(repository)
@@ -102,7 +100,7 @@ class Exporter(object):
         # into CVS
         Git.pristine()
         branches = Git.branches()
-        self.trackBranch(Git, gitbranch, branches, repository, createBranch=False)
+        self.trackBranch(Git, gitbranch, branches, repository)
         Git.checkout(gitbranch)
         Git.mergeFastForward('origin/' + gitbranch)
         return branches
@@ -124,12 +122,10 @@ class Exporter(object):
         return GitFileSet, DeletedFiles, AddedFiles, CommonFiles, AddedDirs
 
     @staticmethod
-    def trackBranch(Git, branch, branches, repository, createBranch=False):
+    def trackBranch(Git, branch, branches, repository):
         if branch not in branches:
             if 'remotes/origin/' + branch in branches:
                 Git.trackBranch(branch)
             else:
-                if not createBranch:
-                    raise KeyError('branch %s not found for repository %s'
-                                   %(branch, repository))
-                Git.newBranch(branch)
+                raise KeyError('branch %s not found for repository %s'
+                               %(branch, repository))

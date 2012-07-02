@@ -121,8 +121,9 @@ class Git(object):
     def commit(self, message):
         shell.run(self.log, 'git', 'commit', '-m', message)
 
-    def push(self, remote, branch):
-        shell.run(self.log, 'git', 'push', remote, branch)
+    def push(self, remote, localbranch, remotebranch):
+        shell.run(self.log, 'git', 'push', remote,
+            ':'.join((localbranch, remotebranch)))
 
     def logmessages(self, since, until):
         _, messages = shell.read(self.log,

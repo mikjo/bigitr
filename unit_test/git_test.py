@@ -288,9 +288,9 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
 
     def test_push(self):
         with mock.patch('gitcvs.git.shell.run'):
-            self.git.push('origin', 'master')
+            self.git.push('origin', 'master', 'master')
             shell.run.assert_called_once_with(mock.ANY,
-                'git', 'push', 'origin', 'master')
+                'git', 'push', 'origin', 'master:master')
 
     def test_logmessages(self):
         with mock.patch('gitcvs.git.shell.read') as r:

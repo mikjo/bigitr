@@ -60,7 +60,7 @@ class Importer(object):
                     gitignore.close()
                 Git.addAll()
                 Git.commit('create new empty master branch')
-                Git.push('origin', 'master')
+                Git.push('origin', 'master', 'master')
 
         os.chdir(repoDir)
         addSkeleton = False
@@ -111,7 +111,7 @@ class Importer(object):
             # FIXME: try to create a commit message that includes all
             # the CVS commit messages since the previous commit, de-duplicated
             Git.commit('import from CVS as of %s' %time.asctime())
-            Git.push('origin', gitbranch)
+            Git.push('origin', gitbranch, gitbranch)
             Git.runPostHooks(repository, gitbranch)
 
         # try to merge downstream branches even if there was nothing to
@@ -140,7 +140,7 @@ class Importer(object):
             if rc != 0:
                 success = False
             else:
-                Git.push('origin', target)
+                Git.push('origin', target, target)
                 Git.runPostHooks(repository, target)
                 rc = self.merge(repository, Git, target)
                 if not rc:

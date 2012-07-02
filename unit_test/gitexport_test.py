@@ -95,8 +95,7 @@ class GitExportTest(testutils.TestCase):
             bo = self.exp.prepareGitClone(self.Git, 'b1', 'repo')
             self.assertEqual(bi, bo)
             self.Git.pristine.assert_called_once_with()
-            tb.assert_called_once_with(self.Git, 'b1', bi, 'repo',
-                createBranch=False)
+            tb.assert_called_once_with(self.Git, 'b1', bi, 'repo')
             self.Git.checkout.assert_called_once_with('b1')
             self.Git.mergeFastForward.assert_called_once_with('origin/b1')
 
@@ -146,15 +145,9 @@ class GitExportTest(testutils.TestCase):
         self.Git.trackBranch.assert_called_once_with('b1')
         self.Git.newBranch.assert_not_called()
 
-    def test_trackBranchCreate(self):
-        self.exp.trackBranch(self.Git, 'b1', set(()), 'repo', createBranch=True)
-        self.Git.trackBranch.assert_not_called()
-        self.Git.newBranch.assert_called_once_with('b1')
-
     def test_trackBranchNoCreate(self):
         self.assertRaises(KeyError,
-            self.exp.trackBranch, self.Git, 'b1', set(()), 'repo',
-            createBranch=False)
+            self.exp.trackBranch, self.Git, 'b1', set(()), 'repo')
         self.Git.trackBranch.assert_not_called()
         self.Git.newBranch.assert_not_called()
 

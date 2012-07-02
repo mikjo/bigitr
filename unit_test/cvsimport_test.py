@@ -61,8 +61,8 @@ class CVSImportTest(testutils.TestCase):
             [mock.call('cvs-b1', "Automated merge 'cvs-b1' into 'b1'"),
              mock.call('cvs-b1', "Automated merge 'cvs-b1' into 'b2'")])
         Git.push.assert_has_calls(
-            [mock.call('origin', 'b1'),
-             mock.call('origin', 'b2')]
+            [mock.call('origin', 'b1', 'b1'),
+             mock.call('origin', 'b2', 'b2')]
         )
         self.assertTrue(rc)
         Git.reset_mock()
@@ -70,7 +70,7 @@ class CVSImportTest(testutils.TestCase):
         Git.checkout.assert_called_once_with('b2')
         Git.mergeDefault.assert_called_once_with(
             'cvs-b2', "Automated merge 'cvs-b2' into 'b2'")
-        Git.push.assert_called_once_with('origin', 'b2')
+        Git.push.assert_called_once_with('origin', 'b2', 'b2')
         self.assertTrue(rc)
 
     def test_mergeFailure(self):
@@ -100,7 +100,7 @@ class CVSImportTest(testutils.TestCase):
         Git.mergeDefault.side_effect = lambda x, y: x == 'b1'
         rc = self.imp.merge('repo', Git, 'cvs-b1')
         Git.checkout.assert_has_calls([mock.call('b1'), mock.call('master')])
-        Git.push.assert_called_once_with('origin', 'b1') # not 'master'
+        Git.push.assert_called_once_with('origin', 'b1', 'b1') # not 'master'
         self.assertFalse(rc)
 
     # importcvs tested only by story testing
