@@ -11,15 +11,23 @@
 # git.<branch> = <cvsbranch> # Git <branch> exports to "<cvsbranch>" in CVS
 # merge.<sourcebranch> = <targetbranch> <targetbranch> # Merge <sourcebranch> onto <targetbranch>(es)
 # prefix.<branch> = <message> # prefix for CVS commit messages on <branch>
-# prehook.git = <command> <args> # hook to run before committing to Git
-# prehook.cvs = <command> <args> # hook to run before committing to CVS
-# posthook.git = <command> <args> # hook to run after committing to Git
-# posthook.cvs = <command> <args> # hook to run after committing to CVS
-# prehook.git.<branch> = <command> <args> # hook to run before committing to Git branch <branch>
-# prehook.cvs.<branch> = <command> <args> # hook to run before committing to CVS branch <branch>
-# posthook.git.<branch> = <command> <args> # hook to run after committing to Git branch <branch>
-# posthook.cvs.<branch> = <command> <args> # hook to run after committing to CVS branch <branch>
 # email = <address> <address> # errors/warnings emailed to these addresses
+# prehook.git = <command> <args> # hook to run in Git clone before committing to either Git or CVS
+# prehook.imp.git = <command> <args> # hook to run in Git clone before committing to Git from CVS
+# prehook.exp.git = <command> <args> # hook to run in Git clone before committing to CVS from Git
+# prehook.cvs = <command> <args> # hook to run in CVS checkout before committing to CVS
+# posthook.git = <command> <args> # hook to run in Git clone after committing to either Git or CVS
+# posthook.imp.git = <command> <args> # hook to run in Git clone after committing to Git from CVS
+# posthook.exp.git = <command> <args> # hook to run in Git clone after committing to CVS from Git
+# posthook.cvs = <command> <args> # hook to run in CVS checkout after committing to CVS
+# prehook.git.<branch> = <command> <args> # hook to run in Git clone before committing to Git branch <branch> or exporting it to CVS
+# prehook.imp.git.<branch> = <command> <args> # hook to run in Git clone before committing to Git branch <branch> from CVS
+# prehook.exp.git.<branch> = <command> <args> # hook to run in Git clone before committing to CVS from Git branch <branch>
+# prehook.cvs.<branch> = <command> <args> # hook to run in CVS checkout before committing to CVS branch <branch>
+# posthook.git.<branch> = <command> <args> # hook to run in Git clone after committing to Git branch <branch> or exporting it to CVS
+# posthook.imp.git.<branch> = <command> <args> # hook to run in Git clone after committing to Git branch <branch> from CVS
+# posthook.exp.git.<branch> = <command> <args> # hook to run in Git clone after committing to CVS from Git branch <branch>
+# posthook.cvs.<branch> = <command> <args> # hook to run in CVS checkout after committing to CVS branch <branch>
 #
 # gitroot, cvsroot, email, skeleton, and hooks may be in a GLOBAL section,
 # which will be overridden by any specific per-repository values.
@@ -68,7 +76,9 @@
 #l
 # Per-branch hooks (e.g. prehook.git.master) are run in addition to
 # general hooks (e.g. prehook.git) and the general hooks are run
-# first.
+# first.  Per-direction hooks (e.g. prehook.imp.git,
+# prehook.imp.git.master) are are run after their bidirectional
+# equivalents.
 #
 # Hooks that modify Git state are generally discouraged.  Committing
 # may invalidate invariants and cause unexpected operation.  Changing
@@ -161,27 +171,47 @@ class RepositoryConfig(config.Config):
     def getHook(self, type, when, repository):
         return self.getDefault(repository, when+'hook.'+type, error=False)
 
+    def getHookDir(self, direction, type, when, repository):
+        if direction:
+            return self.getDefault(repository, when+'hook.'+direction+'.'+type,
+                                   error=False)
+        return None
+
     def getHookBranch(self, type, when, repository, branch):
         return self.getDefault(repository, when+'hook.'+type+'.'+branch,
                                error=False)
 
-    def getHooksBranch(self, type, when, repository, branch):
+    def getHookDirBranch(self, direction, type, when, repository, branch):
+        if direction:
+            return self.getDefault(repository, when+'hook.'+direction+'.'+type+'.'+branch,
+                                   error=False)
+        return None
+
+    def getHooksBranch(self, type, direction, when, repository, branch):
         return [shlex.split(x) for x in
                 (self.getHook(type, when, repository),
-                 self.getHookBranch(type, when, repository, branch))
+                 self.getHookDir(direction, type, when, repository),
+                 self.getHookBranch(type, when, repository, branch),
+                 self.getHookDirBranch(direction, type, when, repository, branch))
                 if x]
 
-    def getGitPreHooks(self, repository, branch):
-        return self.getHooksBranch('git', 'pre', repository, branch)
+    def getGitImpPreHooks(self, repository, branch):
+        return self.getHooksBranch('git', 'imp', 'pre', repository, branch)
 
-    def getGitPostHooks(self, repository, branch):
-        return self.getHooksBranch('git', 'post', repository, branch)
+    def getGitImpPostHooks(self, repository, branch):
+        return self.getHooksBranch('git', 'imp', 'post', repository, branch)
+
+    def getGitExpPreHooks(self, repository, branch):
+        return self.getHooksBranch('git', 'exp', 'pre', repository, branch)
+
+    def getGitExpPostHooks(self, repository, branch):
+        return self.getHooksBranch('git', 'exp', 'post', repository, branch)
 
     def getCVSPreHooks(self, repository, branch):
-        return self.getHooksBranch('cvs', 'pre', repository, branch)
+        return self.getHooksBranch('cvs', None, 'pre', repository, branch)
 
     def getCVSPostHooks(self, repository, branch):
-        return self.getHooksBranch('cvs', 'post', repository, branch)
+        return self.getHooksBranch('cvs', None, 'post', repository, branch)
 
     def getEmail(self, repository):
         email = self.getDefault(repository, 'email', error=False)

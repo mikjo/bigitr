@@ -206,7 +206,7 @@ class TestCVS(testutils.TestCase):
 
     def test_runPreHooks(self):
         with mock.patch('gitcvs.git.shell.run'):
-            self.cvs.runPreHooks('repo')
+            self.cvs.runPreHooks()
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'precommand', 'arg'),
                 mock.call(mock.ANY, 'precommand', 'brnch'),
@@ -214,7 +214,7 @@ class TestCVS(testutils.TestCase):
 
     def test_runPostHooks(self):
         with mock.patch('gitcvs.git.shell.run'):
-            self.cvs.runPostHooks('repo')
+            self.cvs.runPostHooks()
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'postcommand', 'arg'),
                 mock.call(mock.ANY, 'postcommand', 'brnch'),

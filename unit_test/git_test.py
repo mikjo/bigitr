@@ -13,6 +13,14 @@ class TestGit(testutils.TestCase):
                                  'posthook.git = postcommand arg\n'
                                  'prehook.git.brnch = precommand brnch\n'
                                  'posthook.git.brnch = postcommand brnch\n'
+                                 'prehook.imp.git = preimpcommand arg\n'
+                                 'posthook.imp.git = postimpcommand arg\n'
+                                 'prehook.imp.git.brnch = preimpcommand brnch\n'
+                                 'posthook.imp.git.brnch = postimpcommand brnch\n'
+                                 'prehook.exp.git = preexpcommand arg\n'
+                                 'posthook.exp.git = postexpcommand arg\n'
+                                 'prehook.exp.git.brnch = preexpcommand brnch\n'
+                                 'posthook.exp.git.brnch = postexpcommand brnch\n'
                                  '\n')
             self.ctx = context.Context(appConfig, repConfig)
             self.git = git.Git(self.ctx, 'repo')
@@ -300,18 +308,42 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
                 'git', 'log', 'since..until')
             self.assertEqual(msg, 'a message\n')
 
-    def test_runPreHooks(self):
+    def test_runImpPreHooks(self):
         with mock.patch('gitcvs.git.shell.run'):
-            self.git.runPreHooks('repo', 'brnch')
+            self.git.runImpPreHooks('brnch')
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'precommand', 'arg'),
+                mock.call(mock.ANY, 'preimpcommand', 'arg'),
                 mock.call(mock.ANY, 'precommand', 'brnch'),
+                mock.call(mock.ANY, 'preimpcommand', 'brnch'),
             ])
 
-    def test_runPostHooks(self):
+    def test_runImpPostHooks(self):
         with mock.patch('gitcvs.git.shell.run'):
-            self.git.runPostHooks('repo', 'brnch')
+            self.git.runImpPostHooks('brnch')
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'postcommand', 'arg'),
+                mock.call(mock.ANY, 'postimpcommand', 'arg'),
                 mock.call(mock.ANY, 'postcommand', 'brnch'),
+                mock.call(mock.ANY, 'postimpcommand', 'brnch'),
+            ])
+
+    def test_runExpPreHooks(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.git.runExpPreHooks('brnch')
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'precommand', 'arg'),
+                mock.call(mock.ANY, 'preexpcommand', 'arg'),
+                mock.call(mock.ANY, 'precommand', 'brnch'),
+                mock.call(mock.ANY, 'preexpcommand', 'brnch'),
+            ])
+
+    def test_runExpPostHooks(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            self.git.runExpPostHooks('brnch')
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'postcommand', 'arg'),
+                mock.call(mock.ANY, 'postexpcommand', 'arg'),
+                mock.call(mock.ANY, 'postcommand', 'brnch'),
+                mock.call(mock.ANY, 'postexpcommand', 'brnch'),
             ])

@@ -4,6 +4,7 @@ import shell
 class Git(object):
     def __init__(self, ctx, repo):
         self.ctx = ctx
+        self.repo = repo
         self.log = self.ctx.logs[repo]
 
     def clone(self, uri):
@@ -130,10 +131,18 @@ class Git(object):
             'git', 'log', '%s..%s' %(since, until))
         return messages
 
-    def runPreHooks(self, repository, branch):
-        for hook in self.ctx.getGitPreHooks(repository, branch):
+    def runImpPreHooks(self, branch):
+        for hook in self.ctx.getGitImpPreHooks(self.repo, branch):
             shell.run(self.log, *hook)
 
-    def runPostHooks(self, repository, branch):
-        for hook in self.ctx.getGitPostHooks(repository, branch):
+    def runImpPostHooks(self, branch):
+        for hook in self.ctx.getGitImpPostHooks(self.repo, branch):
+            shell.run(self.log, *hook)
+
+    def runExpPreHooks(self, branch):
+        for hook in self.ctx.getGitExpPreHooks(self.repo, branch):
+            shell.run(self.log, *hook)
+
+    def runExpPostHooks(self, branch):
+        for hook in self.ctx.getGitExpPostHooks(self.repo, branch):
             shell.run(self.log, *hook)

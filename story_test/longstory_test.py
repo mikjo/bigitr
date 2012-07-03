@@ -592,6 +592,8 @@ class TestStory(unittest.TestCase):
              'BRANCHES: * b2',
              'BRANCHES: * master',
              'BRANCHES: * b1',
+             'BRANCHES: * master',
+             'BRANCHES: * b1',
              'BRANCHES: * b2',
              'BRANCHES: * master',
              'BRANCHES: * cvs-b2',
@@ -843,8 +845,10 @@ class TestStory(unittest.TestCase):
              if x.startswith('CMP ')],
             ['CMP PREBRANCHES: * cvs-b1',
              'CMP POSTBRANCHES: * cvs-b1',
+             'CMP PREBRANCHES: * master',
              'CMP CVSPRE: %s/module1/b2/module1' % self.cvsdir,
-             'CMP CVSPOST: %s/module1/b2/module1' % self.cvsdir])
+             'CMP CVSPOST: %s/module1/b2/module1' % self.cvsdir,
+             'CMP POSTBRANCHES: * master'])
 
     def test_lowlevel6(self):
         'test exporting git branch changes to cvs with nested new subdirs'

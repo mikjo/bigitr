@@ -37,6 +37,7 @@ def inCVSDIR(fn):
 class CVS(object):
     def __init__(self, ctx, repo, branch, username):
         self.ctx = ctx
+        self.repo = repo
         self.location = self.ctx.getCVSPath(repo)
         self.path = ctx.getCVSBranchCheckoutDir(repo, branch)
         self.pathbase = os.path.basename(self.path)
@@ -118,11 +119,11 @@ class CVS(object):
             os.close(fd)
 
     @inCVSPATH
-    def runPreHooks(self, repository):
-        for hook in self.ctx.getCVSPreHooks(repository, self.branch):
+    def runPreHooks(self):
+        for hook in self.ctx.getCVSPreHooks(self.repo, self.branch):
             shell.run(self.log, *hook)
 
     @inCVSPATH
-    def runPostHooks(self, repository):
-        for hook in self.ctx.getCVSPostHooks(repository, self.branch):
+    def runPostHooks(self):
+        for hook in self.ctx.getCVSPostHooks(self.repo, self.branch):
             shell.run(self.log, *hook)

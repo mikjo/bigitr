@@ -129,17 +129,30 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
         self.assertEqual(self.cfg.getMergeBranchMaps('Path/To/Git/repo2'),
                          {})
 
-    def test_getGitPreHooks(self):
+    def test_getGitImpPreHooks(self):
         self.assertEqual(
-            self.cfg.getGitPreHooks('Path/To/Git/repository', 'master'),
+            self.cfg.getGitImpPreHooks('Path/To/Git/repository', 'master'),
             [['gitprehook', 'arg'], ['gitmasterprehook']])
         self.assertEqual(
-            self.cfg.getGitPreHooks('Path/To/Git/repository', 'a1'),
+            self.cfg.getGitImpPreHooks('Path/To/Git/repository', 'a1'),
             [['gitprehook', 'arg'], ['gita1prehook']])
 
-    def test_getGitPostHooks(self):
+    def test_getGitImpPostHooks(self):
         self.assertEqual(
-            self.cfg.getGitPostHooks('Path/To/Git/repository', 'master'),
+            self.cfg.getGitImpPostHooks('Path/To/Git/repository', 'master'),
+            [['gitposthook'], ['gitmasterposthook']])
+
+    def test_getGitExpPreHooks(self):
+        self.assertEqual(
+            self.cfg.getGitExpPreHooks('Path/To/Git/repository', 'master'),
+            [['gitprehook', 'arg'], ['gitmasterprehook']])
+        self.assertEqual(
+            self.cfg.getGitExpPreHooks('Path/To/Git/repository', 'a1'),
+            [['gitprehook', 'arg'], ['gita1prehook']])
+
+    def test_getGitExpPostHooks(self):
+        self.assertEqual(
+            self.cfg.getGitExpPostHooks('Path/To/Git/repository', 'master'),
             [['gitposthook'], ['gitmasterposthook']])
 
     def test_getCVSPreHooks(self):

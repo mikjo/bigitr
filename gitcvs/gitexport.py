@@ -42,6 +42,14 @@ class Exporter(object):
                 # populated CVS keywords checked into Git.)
                 return
 
+        # it is not recommended that hooks commit, but if they do, they will
+        # have commit messages that are automated and should not show up in
+        # CVS commits. Therefore, run the hooks after getting the Git commit
+        # messages. However, by the same token, they must be run before
+        # calculating fileSets.
+
+        Git.runExpPreHooks(gitbranch)
+
         # wait until we think there are changes to export before checking
         # out from CVS, since this checkout/update can be slow
         self.checkoutCVS(CVS)
@@ -69,14 +77,15 @@ class Exporter(object):
         CVS.addFiles(sorted(list(AddedFiles)))
 
         # before infoDiff so that changes are represented in the infoDiff
-        CVS.runPreHooks(repository)
+        CVS.runPreHooks()
 
         CVS.infoDiff()
         CVS.commit(GitMessages)
         Git.push('origin', gitbranch, exportbranch)
 
         # posthooks only after successfully pushing export- merge to origin
-        CVS.runPostHooks(repository)
+        CVS.runPostHooks()
+        Git.runExpPostHooks(gitbranch)
 
     def cloneGit(self, Git, repository, repoDir):
         if not os.path.exists(repoDir):
