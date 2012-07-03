@@ -101,6 +101,7 @@ class Importer(object):
             Git.runImpPreHooks(gitbranch)
             Git.infoStatus()
             Git.infoDiff()
+            # store Git.log.lastOutput() to email after successful push
             Git.addAll()
 
         # Git.addAll() will have regularized line ending differences,

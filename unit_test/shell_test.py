@@ -35,7 +35,9 @@ logdir = %s
     def test_Empty(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         s = shell.LoggingShell(l, 'true')
-        retcode = s.wait()
+        self.assertEqual(l.lastOutput(), (None, None))
+        retcode = s.finish()
+        self.assertEqual(l.lastOutput(), ('', ''))
         self.assertEqual(retcode, 0)
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
@@ -54,8 +56,9 @@ logdir = %s
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         os.write(l.stdout, 'this is a test\n')
         s = shell.LoggingShell(l, 'true')
-        retcode = s.wait()
+        retcode = s.finish()
         self.assertEqual(retcode, 0)
+        self.assertEqual(l.lastOutput(), ('', ''))
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
@@ -77,8 +80,9 @@ logdir = %s
         os.write(l.stdout, 'this is a test of standard output\n')
         # warning of bad exit code will write to stderr
         s = shell.LoggingShell(l, 'false', error=False)
-        retcode = s.wait()
+        retcode = s.finish()
         self.assertEqual(retcode, 1)
+        self.assertEqual(l.lastOutput(), ('', ''))
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
@@ -94,7 +98,7 @@ logdir = %s
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         # warning of bad exit code will write to stderr
         s = shell.LoggingShell(l, 'false', error=False)
-        retcode = s.wait()
+        retcode = s.finish()
         self.assertEqual(retcode, 1)
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
@@ -113,7 +117,7 @@ logdir = %s
     def test_RaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         s = shell.LoggingShell(l, 'false')
-        self.assertRaises(ValueError, s.wait)
+        self.assertRaises(ValueError, s.finish)
         l.close()
         self.assertTrue(' COMPLETE with return code: 1\n'
                         in self.logdata.getvalue())
@@ -157,6 +161,7 @@ logdir = %s
         retcode, output = shell.read(l, 'echo', 'foo')
         self.assertEqual(retcode, 0)
         self.assertEqual(output, 'foo\n')
+        self.assertEqual(l.lastOutput(), ('', ''))
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
         files = os.listdir(thislog)
@@ -171,3 +176,14 @@ logdir = %s
         self.assertEqual(self.logdata.getvalue(), '')
         self.logdata.truncate(0)
         
+    def test_readShellOutputData(self):
+        l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
+        retcode = shell.run(l, 'echo', 'foo')
+        self.assertEqual(retcode, 0)
+        self.assertEqual(l.lastOutput(), ('foo\n', ''))
+
+    def test_readShellOutputError(self):
+        l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
+        retcode = shell.run(l, 'sh', '-c', 'echo bar; echo baz; echo foo >&2 ; exit 1', error=False)
+        self.assertEqual(retcode, 1)
+        self.assertEqual(l.lastOutput(), ('bar\nbaz\n', 'foo\n'))

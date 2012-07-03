@@ -80,6 +80,7 @@ class Exporter(object):
         CVS.runPreHooks()
 
         CVS.infoDiff()
+        # email with CVS.log.lastOutput() and GitMessages
         CVS.commit(GitMessages)
         Git.push('origin', gitbranch, exportbranch)
 

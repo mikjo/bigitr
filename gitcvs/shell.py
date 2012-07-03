@@ -14,6 +14,7 @@ class LoggingShell(subprocess.Popen):
         start = ' '.join((ts, 'START:', cmd, '\n'))
         os.write(log.stderr, start)
         os.write(log.stdout, start)
+        self.log.markStart()
         self.p = subprocess.Popen.__init__(self, args, **kwargs)
 
     def timestamp(self):
@@ -24,8 +25,9 @@ class LoggingShell(subprocess.Popen):
         return time.strftime('[%a %b %d %H:%m:%S.'
                              + frac[2:] + ' ' + tzname + ' %Y]')
 
-    def wait(self):
+    def finish(self):
         retcode = subprocess.Popen.wait(self)
+        self.log.markStop()
         ts = self.timestamp()
         finish = '%s COMPLETE with return code: %d\n' %(ts, retcode)
         os.write(self.log.stderr, finish)
@@ -39,11 +41,11 @@ class LoggingShell(subprocess.Popen):
 
 def run(log, *args, **kwargs):
     s = LoggingShell(log, *args, **kwargs)
-    return s.wait()
+    return s.finish()
 
 def read(log, *args, **kwargs):
     kwargs['stdout'] = subprocess.PIPE
     s = LoggingShell(log, *args, **kwargs)
     output = s.communicate()
-    retcode = s.wait()
+    retcode = s.finish()
     return retcode, output[0]
