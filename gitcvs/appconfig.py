@@ -1,18 +1,5 @@
 #
 # Read configuration files for cvs/git synchronization
-# [global]
-# gitdir = /path/to/directory/holding/git/repositories
-# logdir = /path/to/log/directory
-# mailfrom = sendinguser@host
-# smarthost = smtp.smarthost.name
-# [import]
-# onerror = abort # abort|warn|continue
-# resetids = true # false to leave $cvsid:...$ alone
-# cvsdir = /path/to/directory/for/cvs/export
-# [export]
-# preimport = true # false to overwrite whatever is in CVS
-# onerror = abort # abort|warn|continue
-# cvsdir = /path/to/directory/for/cvs/checkouts
 #
 
 import config
