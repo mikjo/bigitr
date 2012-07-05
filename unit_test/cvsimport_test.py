@@ -8,7 +8,6 @@ from gitcvs import cvsimport, context
 
 class CVSImportTest(testutils.TestCase):
     def setUp(self):
-        self.username = 'janedoe'
         with mock.patch('gitcvs.log.Log') as mocklog:
             with mock.patch('gitcvs.log.LogCache') as mocklogcache:
                 appConfig = StringIO('[global]\n'
@@ -32,7 +31,7 @@ class CVSImportTest(testutils.TestCase):
                                      )
                 self.ctx = context.Context(appConfig, repConfig)
                 self.mocklog = mocklog()
-                self.imp = cvsimport.Importer(self.ctx, self.username)
+                self.imp = cvsimport.Importer(self.ctx)
 
                 #self.importcvs = self.imp.importcvs
                 #self.imp.importcvs = mock.Mock()

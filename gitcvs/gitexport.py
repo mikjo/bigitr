@@ -6,9 +6,8 @@ import git
 import cvs
 
 class Exporter(object):
-    def __init__(self, ctx, username):
+    def __init__(self, ctx):
         self.ctx = ctx
-        self.username = username
 
     def exportAll(self):
         for repository in self.ctx.getRepositories():
@@ -18,7 +17,7 @@ class Exporter(object):
     def exportBranches(self, repository, Git):
         for gitbranch, cvsbranch, exportbranch in self.ctx.getExportBranchMaps(
                 repository):
-            CVS = cvs.CVS(self.ctx, repository, cvsbranch, self.username)
+            CVS = cvs.CVS(self.ctx, repository, cvsbranch)
             self.exportgit(repository, Git, CVS, gitbranch, exportbranch)
 
     def exportgit(self, repository, Git, CVS, gitbranch, exportbranch):

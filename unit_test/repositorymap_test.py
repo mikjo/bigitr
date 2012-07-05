@@ -8,16 +8,17 @@ from gitcvs import repositorymap
 
 class TestRepositoryConfig(testutils.TestCase):
     def setUp(self):
+        os.environ['TESTCVSUSER'] = 'usr'
         self.fd, self.cf = tempfile.mkstemp(suffix='.gitcvs')
         file(self.cf, 'r+').write('''
 [GLOBAL]
 gitroot = git@host2
-cvsroot = @server2:/path
+cvsroot = :pserver:${TESTCVSUSER}@server2:/path
 prehook.git = gitprehook arg
 cvsvar.V = default
 [Path/To/Git/repository]
 gitroot = git@host
-cvsroot = @servername:/path
+cvsroot = :pserver:${TESTCVSUSER}@servername:/path
 cvspath = Path/To/CVS/directory
 skeleton = /path/to/skeleton
 branchfrom = branchroot
@@ -75,11 +76,11 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
             'repo2')
 
     def test_getCVSRoot(self):
-        self.assertEqual(self.cfg.getCVSRoot('Path/To/Git/repository', 'usr'),
+        self.assertEqual(self.cfg.getCVSRoot('Path/To/Git/repository'),
                          ':pserver:usr@servername:/path')
     
     def test_getCVSRootDefault(self):
-        self.assertEqual(self.cfg.getCVSRoot('Path/To/Git/repo2', 'usr'),
+        self.assertEqual(self.cfg.getCVSRoot('Path/To/Git/repo2'),
                          ':pserver:usr@server2:/path')
     
     def test_getGitRef(self):

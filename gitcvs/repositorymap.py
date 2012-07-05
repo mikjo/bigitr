@@ -42,8 +42,8 @@ class RepositoryConfig(config.Config):
     def getRepositoryName(repository):
         return os.path.basename(repository)
 
-    def getCVSRoot(self, repository, username):
-        return ':pserver:%s%s' %(username, self.getDefault(repository, 'cvsroot'))
+    def getCVSRoot(self, repository):
+        return self.getDefault(repository, 'cvsroot')
 
     def getGitRef(self, repository):
         return ':'.join((self.getDefault(repository, 'gitroot'), repository))

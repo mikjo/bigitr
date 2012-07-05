@@ -242,7 +242,7 @@ repository sections in that file.
 
     [GLOBAL]
     gitroot = git@host # <gitroot>:<repositoryname>
-    cvsroot = @servername:/path # pserver:<username> added dynamically
+    cvsroot = :pserver:${USER}@servername:/path
     skeleton = ${BIGITR_CONF}/path/to/general/skeleton
 
     [Path/To/Git/repository]

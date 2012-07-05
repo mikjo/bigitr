@@ -56,7 +56,7 @@ class TestStory(unittest.TestCase):
                                self.cvsdir,
                                self.expdir) # "cvs export" to import into git
                             )
-        repConfig = StringIO('[GLOBAL]'
+        repConfig = StringIO('[GLOBAL]\n'
                              'cvsroot = %s\n'
                              'gitroot = %s/\n'
                              '[git/module1]\n'
@@ -80,10 +80,7 @@ class TestStory(unittest.TestCase):
                                 self.skeldir)
                              )
         self.ctx = context.Context(appConfig, repConfig)
-        self.getCVSRoot = self.ctx.getCVSRoot
         self.getGitRef = self.ctx.getGitRef
-        self.ctx.getCVSRoot = mock.Mock()
-        self.ctx.getCVSRoot.return_value = self.cvsroot
         self.ctx.getGitRef = lambda(a): '/'.join((self.gitroot, a))
 
     @staticmethod
@@ -97,7 +94,6 @@ class TestStory(unittest.TestCase):
             os.environ['CVSROOT'] = self.oldcvsroot
         else:
             os.unsetenv('CVSROOT')
-        self.ctx.getCVSRoot = self.getCVSRoot
         self.ctx.getGitRef = self.getGitRef
 
     def unpack(self, tarball):
@@ -117,10 +113,10 @@ class TestStory(unittest.TestCase):
     def test_lowlevel1(self):
         'test initial import process'
         self.unpack('TESTROOT.1.tar.gz')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx)
+        exp = gitexport.Exporter(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVS = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVS = cvs.CVS(self.ctx, 'git/module1', 'b1')
         # the tool otherwise assumes that the remote repository exists
         os.system('git init --bare %s/git/module1' %self.gitroot)
         imp.importcvs('git/module1', Git, CVS, 'b1', 'cvs-b1')
@@ -169,7 +165,7 @@ class TestStory(unittest.TestCase):
         self.assertFalse(os.path.exists(self.gitdir + '/module1/4'))
 
         # new CVS branch requires separate CVS object that knows about it
-        CVS2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+        CVS2 = cvs.CVS(self.ctx, 'git/module1', 'b2')
         imp.importcvs('git/module1', Git, CVS2, 'b2', 'cvs-b2')
         self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
         self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
@@ -204,7 +200,7 @@ class TestStory(unittest.TestCase):
 
         # make sure that nothing conflicts with another module
         Gitm2 = git.Git(self.ctx, 'git/module2')
-        CVSm2 = cvs.CVS(self.ctx, 'git/module2', 'b1', imp.username)
+        CVSm2 = cvs.CVS(self.ctx, 'git/module2', 'b1')
         # the tool otherwise assumes that the remote repository exists
         os.system('git init --bare %s/git/module2' %self.gitroot)
         imp.importcvs('git/module2', Gitm2, CVSm2, 'b1', 'cvs-b1')
@@ -245,7 +241,7 @@ class TestStory(unittest.TestCase):
 
         # .gitignore primed from .cvsignore if it exists and no skeleton
         Gitm3 = git.Git(self.ctx, 'git/module3')
-        CVSm3 = cvs.CVS(self.ctx, 'git/module3', 'b1', imp.username)
+        CVSm3 = cvs.CVS(self.ctx, 'git/module3', 'b1')
         # the tool otherwise assumes that the remote repository exists
         os.system('git init --bare %s/git/module3' %self.gitroot)
         imp.importcvs('git/module3', Gitm3, CVSm3, 'b1', 'cvs-b1')
@@ -264,9 +260,9 @@ class TestStory(unittest.TestCase):
         # Make sure that we raise an error for missing CVS branch
         # and don't create a Git branch for it
         self.unpack('TESTROOT.2.tar.gz')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSbad = cvs.CVS(self.ctx, 'git/module1', 'bad', imp.username)
+        CVSbad = cvs.CVS(self.ctx, 'git/module1', 'bad')
         self.assertRaises(ValueError, imp.importcvs,
             'git/module1', Git, CVSbad, 'bad', 'cvs-bad')
         # ensure that we didn't get to checking out a git dir,
@@ -289,7 +285,7 @@ class TestStory(unittest.TestCase):
                   %self.cvsco)
 
         self.ctx._rm.set('git/module1', 'cvspath', 'module1/empty')
-        CVSbad = cvs.CVS(self.ctx, 'git/module1', 'bad', imp.username)
+        CVSbad = cvs.CVS(self.ctx, 'git/module1', 'bad')
         self.assertRaises(RuntimeError, imp.importcvs,
             'git/module1', Git, CVSbad, 'bad', 'cvs-bad')
         # ensure that we didn't get to checking out a git dir,
@@ -300,7 +296,7 @@ class TestStory(unittest.TestCase):
     def test_lowlevel2(self):
         'test updating multiple branches in multiple repositories together'
         self.unpack('TESTROOT.2.tar.gz')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
         # set up work directory
         imp.importAll()
@@ -339,7 +335,7 @@ class TestStory(unittest.TestCase):
     def test_lowlevel3(self):
         'test imports onto merged branches'
         self.unpack('TESTROOT.3.tar.gz')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
         # set up work directory
         imp.importBranches('git/module1', Git)
@@ -389,9 +385,9 @@ class TestStory(unittest.TestCase):
     def test_lowlevel4Junk(self):
         'test throwing away junk in the git directory'
         self.unpack('TESTROOT.4.tar.gz')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVS = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVS = cvs.CVS(self.ctx, 'git/module1', 'b1')
         # set up work directory
         imp.importcvs('git/module1', Git, CVS, 'b1', 'cvs-b1')
         file('%s/module1/transient' %self.gitdir, 'w')
@@ -402,9 +398,9 @@ class TestStory(unittest.TestCase):
     def test_lowlevel4BadGitBranch(self):
         'test error on specifying unknown git source branch'
         self.unpack('TESTROOT.4.tar.gz')
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVS = cvs.CVS(self.ctx, 'git/module1', 'b1', exp.username)
+        CVS = cvs.CVS(self.ctx, 'git/module1', 'b1')
         self.assertRaises(KeyError, exp.exportgit,
             'git/module1', Git, CVS, 'wRoNgBrAnCh', 'export-yuck')
         # do not need to pack anything, since no changes have been made
@@ -412,11 +408,11 @@ class TestStory(unittest.TestCase):
     def test_lowlevel4(self):
         'test exporting git branch changes to cvs'
         self.unpack('TESTROOT.4.tar.gz')
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
-        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2')
         # really need to work in a separate checkout to make sure that
         # we pull changes
         os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
@@ -490,10 +486,10 @@ class TestStory(unittest.TestCase):
         self.ctx._rm.set('GLOBAL', 'posthook.git', scriptdir+'/gitpost')
 
         self.unpack('TESTROOT.5.tar.gz')
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
 
         os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
         os.system('cd %s/module1 && '
@@ -605,11 +601,11 @@ class TestStory(unittest.TestCase):
     def test_lowlevel5keyword(self):
         'test cvs keyword demangling'
         self.unpack('TESTROOT.5.tar.gz')
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
-        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2')
         os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
                   %(self.cvsco, self.cvsroot))
         file(self.cvsco + '/module1/keywords', 'w').write('''
@@ -678,10 +674,10 @@ class TestStory(unittest.TestCase):
         'test converting line endings only does not break cvs import'
         self.unpack('TESTROOT.6.tar.gz')
 
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
 
         os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
                   %(self.cvsco, self.cvsroot))
@@ -739,11 +735,11 @@ class TestStory(unittest.TestCase):
         self.ctx._rm.set('git/module1', 'prehook.git.cvs-b1', scriptdir+'/crnl')
         self.ctx._rm.set('git/module1', 'prehook.cvs.b2', scriptdir+'/crnl')
 
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
-        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2')
 
         os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
                   %(self.cvsco, self.cvsroot))
@@ -813,11 +809,11 @@ class TestStory(unittest.TestCase):
         self.ctx._rm.set('GLOBAL', 'posthook.git', scriptdir+'/gitpost')
         self.ctx._rm.set('GLOBAL', 'posthook.cvs', scriptdir+'/cvspost')
 
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
-        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2', imp.username)
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2')
 
         os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
                   %(self.cvsco, self.cvsroot))
@@ -853,10 +849,10 @@ class TestStory(unittest.TestCase):
     def test_lowlevel6(self):
         'test exporting git branch changes to cvs with nested new subdirs'
         self.unpack('TESTROOT.6.tar.gz')
-        exp = gitexport.Exporter(self.ctx, 'johndoe')
-        imp = cvsimport.Importer(self.ctx, 'johndoe')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
         Git = git.Git(self.ctx, 'git/module1')
-        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1', imp.username)
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
 
         # really need to work in a separate checkout to make sure that
         # we pull changes

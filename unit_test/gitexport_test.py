@@ -8,7 +8,6 @@ from gitcvs import gitexport, context
 
 class GitExportTest(testutils.TestCase):
     def setUp(self):
-        self.username = 'janedoe'
         with mock.patch('gitcvs.log.Log') as mocklog:
             with mock.patch('gitcvs.log.LogCache') as mocklogcache:
                 appConfig = StringIO('[global]\n'
@@ -29,7 +28,7 @@ class GitExportTest(testutils.TestCase):
                                      )
                 self.ctx = context.Context(appConfig, repConfig)
                 self.mocklog = mocklog()
-                self.exp = gitexport.Exporter(self.ctx, self.username)
+                self.exp = gitexport.Exporter(self.ctx)
                 self.Git = mock.Mock()
                 self.CVS = mock.Mock()
 

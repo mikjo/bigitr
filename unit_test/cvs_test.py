@@ -33,7 +33,7 @@ class TestCVS(testutils.TestCase):
                                  'posthook.cvs.brnch = postcommand brnch\n'
                                  '\n')
             self.ctx = context.Context(appConfig, repConfig)
-            self.cvs = cvs.CVS(self.ctx, 'repo', 'brnch', 'johndoe')
+            self.cvs = cvs.CVS(self.ctx, 'repo', 'brnch')
             self.mocklog = mocklog()
 
     def tearDown(self):
@@ -47,7 +47,7 @@ class TestCVS(testutils.TestCase):
     def test_setEnvironment(self):
         self.cvs.setEnvironment()
         self.assertEqual(os.environ['CVSROOT'],
-            self.ctx.getCVSRoot('repo', 'johndoe'))
+            self.ctx.getCVSRoot('repo'))
 
     def test_listContentFiles(self):
         fdir = '%s/repo/brnch/Loc' %self.cdir
@@ -66,7 +66,7 @@ class TestCVS(testutils.TestCase):
             shell.run.assert_called_once_with(mock.ANY,
                 'cvs', 'export', '-kk', '-d', 'targetdir', '-r', 'brnch', 'Some/Loc')
             self.assertEqual(os.environ['CVSROOT'],
-                self.ctx.getCVSRoot('repo', 'johndoe'))
+                self.ctx.getCVSRoot('repo'))
 
     def test_disableLogKeyword(self):
         with mock.patch('gitcvs.git.shell.run'):
@@ -83,11 +83,7 @@ class TestCVS(testutils.TestCase):
                     'cvs', 'checkout', '-kk', '-d', 'Loc',
                     '-r', 'brnch', 'Some/Loc')
                 self.assertEqual(os.environ['CVSROOT'],
-                    self.ctx.getCVSRoot('repo', 'johndoe'))
-                os.getcwd.assert_called_once_with()
-                self.assertEqual(os.chdir.call_count, 2)
-                os.chdir.assert_any_call(os.getcwd())
-                os.chdir.assert_any_call('%s/repo/brnch' %self.cdir)
+                    self.ctx.getCVSRoot('repo'))
 
     def test_infoDiff(self):
         with mock.patch('gitcvs.git.shell.run'):

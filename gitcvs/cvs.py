@@ -35,7 +35,7 @@ def inCVSDIR(fn):
     return wrapper
 
 class CVS(object):
-    def __init__(self, ctx, repo, branch, username):
+    def __init__(self, ctx, repo, branch):
         self.ctx = ctx
         self.repo = repo
         self.location = self.ctx.getCVSPath(repo)
@@ -43,7 +43,7 @@ class CVS(object):
         self.pathbase = os.path.basename(self.path)
         self.branch = branch
         self.log = self.ctx.logs[repo]
-        self.root = ctx.getCVSRoot(repo, username)
+        self.root = ctx.getCVSRoot(repo)
 
     def setEnvironment(self):
         os.environ['CVSROOT'] = self.root
