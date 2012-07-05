@@ -14,6 +14,7 @@ class TestRepositoryConfig(testutils.TestCase):
 gitroot = git@host2
 cvsroot = @server2:/path
 prehook.git = gitprehook arg
+cvsvar.V = default
 [Path/To/Git/repository]
 gitroot = git@host
 cvsroot = @servername:/path
@@ -25,6 +26,8 @@ cvs.a2 = a2
 git.master = a2
 git.a1 = a1
 prefix.a2 = cvs-a2-prefix
+cvsvar.V = override
+cvsvar.V2 = v2
 merge.cvs-a2 = a2 master
 merge.cvs-a1 = a1
 prehook.git.master = gitmasterprehook
@@ -119,6 +122,12 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
         self.assertEqual(self.cfg.getExportBranchMaps('Path/To/Git/repository'),
                          [('a1', 'a1', 'export-a1'),
                           ('master', 'a2', 'export-master')])
+
+    def test_getCVSVariables(self):
+        self.assertEqual(self.cfg.getCVSVariables('Path/To/Git/repository'),
+                         ['V=override', 'V2=v2'])
+        self.assertEqual(self.cfg.getCVSVariables('Path/To/Git/repo2'),
+                         ['V=default'])
 
     def test_getMergeBranchMaps(self):
         self.assertEqual(self.cfg.getMergeBranchMaps('Path/To/Git/repository'),

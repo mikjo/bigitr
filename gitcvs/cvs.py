@@ -112,8 +112,12 @@ class CVS(object):
     def commit(self, message):
         fd, name = tempfile.mkstemp('.gitcvs')
         os.write(fd, message)
+        # flat list: ['-s', 'A=a', '-s', 'B=b']
+        cvsvars = sum([['-s', x]
+                       for x in self.ctx.getCVSVariables(self.repo)], [])
+        commitargs = ['commit', '-r', self.branch, '-R', '-F', name]
         try:
-            shell.run(self.log, 'cvs', 'commit', '-r', self.branch, '-R', '-F', name)
+            shell.run(self.log, 'cvs', *(cvsvars + commitargs))
         finally:
             os.remove(name)
             os.close(fd)

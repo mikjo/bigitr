@@ -67,6 +67,13 @@ class RepositoryConfig(config.Config):
                  for x in sorted(self.options(repository))
                  if x.startswith('cvs.')]
 
+    def getCVSVariables(self, repository):
+        'return: ["VARIABLE=value", ...]'
+        return ['='.join((x[7:], '' + self.getDefault(repository, x)))
+                for x in sorted(set(self.options(repository) +
+                                    self.options('GLOBAL')))
+                if x.startswith('cvsvar.')]
+
     def getExportBranchMaps(self, repository):
         'return: [(gitbranch, cvsbranch, exportbranch), ...]'
         return [(x[4:], self.get(repository, x), 'export-' + x[4:])

@@ -11,6 +11,8 @@ class Config(ConfigParser.SafeConfigParser):
             self.readConfig(configFile)
         self.requireAbsolutePaths()
 
+    optionxform = str # case sensitive
+
     def requireAbsolutePaths(self, *sections):
         sections = set(sections)
         for section in self.sections():

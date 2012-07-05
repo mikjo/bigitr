@@ -23,7 +23,8 @@ class TestCVS(testutils.TestCase):
                                  'gitdir = %s\n'
                                  '[export]\n'
                                  'cvsdir = %s\n' %(self.dir, self.cdir))
-            repConfig = StringIO('[repo]\n'
+            repConfig = StringIO('[GLOBAL]\n'
+                                 '[repo]\n'
                                  'cvsroot = asdf\n'
                                  'cvspath = Some/Loc\n'
                                  'prehook.cvs = precommand arg\n'
@@ -203,6 +204,25 @@ class TestCVS(testutils.TestCase):
                         'cvs', 'commit', '-r', 'brnch', '-R', '-F', '/notThere')
                     mockos['remove'].assert_called_once_with('/notThere')
                     mockos['close'].assert_called_once_with(123456789)
+
+    def test_commitWithCVSVariables(self):
+        with mock.patch('gitcvs.git.shell.run'):
+            with mock.patch.multiple('os', remove=mock.DEFAULT,
+                                           close=mock.DEFAULT,
+                                           write=mock.DEFAULT) as mockos:
+                with mock.patch('tempfile.mkstemp') as mockmkstemp:
+                    mockmkstemp.return_value = (12345678, '/notThere')
+                    self.ctx._rm.set('GLOBAL', 'cvsvar.V1', 'val1')
+                    self.ctx._rm.set('GLOBAL', 'cvsvar.V2', 'invalid')
+                    self.ctx._rm.set('repo', 'cvsvar.V2', 'val2')
+                    self.cvs.commit('commitMessage')
+                    mockos['write'].assert_called_once_with(12345678, 'commitMessage')
+                    mockmkstemp.assert_called_once_with('.gitcvs')
+                    shell.run.assert_called_once_with(mock.ANY, 'cvs',
+                        '-s', 'V1=val1', '-s', 'V2=val2',
+                        'commit', '-r', 'brnch', '-R', '-F', '/notThere')
+                    mockos['remove'].assert_called_once_with('/notThere')
+                    mockos['close'].assert_called_once_with(12345678)
 
     def test_runPreHooks(self):
         with mock.patch('gitcvs.git.shell.run'):

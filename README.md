@@ -235,7 +235,8 @@ configuration might be:
 ### Repository configuration ###
 
 A repository.conf file has one section per repository, plus an
-optional `GLOBAL` section that is inherited by all the
+optional `GLOBAL` (all capitals, preserving `global` as a possible
+real repository name) section that is inherited by all the
 repository sections in that file.
 
 
@@ -253,6 +254,7 @@ repository sections in that file.
     merge.<sourcebranch> = <targetbranch> <targetbranch> # Merge <sourcebranch> onto <targetbranch>(es)
     prefix.<branch> = <message> # prefix for CVS commit messages on <branch>
     email = <address> <address> # errors/warnings emailed to these addresses
+    cvsvar.<variable> = <value> # for CVS, use -s <variable>=<value>
 
     prehook.git = <command> <args> # hook to run in Git clone before committing to either Git or CVS
     prehook.imp.git = <command> <args> # hook to run in Git clone before committing to Git from CVS
