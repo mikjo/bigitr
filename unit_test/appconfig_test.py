@@ -16,7 +16,6 @@ mailfrom = sendinguser@host
 smarthost = smtp.smarthost.name
 [import]
 onerror = continue
-resetids = false
 cvsdir = /path/to/directory/for/cvs/exports
 [export]
 preimport = false
@@ -71,14 +70,6 @@ cvsdir = /path/to/directory/for/cvs/checkouts/for/branch/imports
     def test_getExportCVSDir(self):
         self.assertEqual(self.cfg.getExportCVSDir(),
             '/path/to/directory/for/cvs/exports')
-
-    def test_getResetIds(self):
-        self.assertEqual(self.cfg.getResetIds(),
-            False)
-
-    def test_getResetIdsDefault(self):
-        self.assertEqual(self.cfgdef.getResetIds(),
-            True)
 
     def test_getExportPreImportFalse(self):
         self.assertEqual(self.cfg.getExportPreImport(),

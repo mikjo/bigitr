@@ -27,6 +27,9 @@ class Log(object):
     def tell(fd):
         return os.lseek(fd, 0, os.SEEK_CUR)
 
+    def writeError(self, message):
+        os.write(self.stderr, message)
+
     def currentMark(self):
         return (self.tell(self.stdout),
                 self.tell(self.stderr))

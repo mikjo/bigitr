@@ -254,6 +254,13 @@ class TestStory(unittest.TestCase):
         # Make sure that we don't accidentally delete a CVS branch
         self.assertRaises(RuntimeError, exp.exportBranches, 'git/module3', Gitm3)
 
+        # The traceback and the exception are logged, and no blank lines
+        self.assertEqual(
+            [x.strip() for x in file(Gitm3.log.thiserr).readlines()
+             if 'RuntimeError' in x or 'Traceback' in x or x == '\n'],
+            ['Traceback (most recent call last):',
+             "RuntimeError: Not committing empty branch 'b1' from git branch 'master'"])
+
         self.pack('TESTROOT.2.tar.gz')
 
     def test_lowlevel2badCVSBranch(self):

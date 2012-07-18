@@ -35,7 +35,7 @@ class GitExportTest(testutils.TestCase):
     def tearDown(self):
         pass
 
-    # tests exportBranches thoroughly
+    # tests exportBranches normal use thoroughly
     def test_exportAll(self):
         with mock.patch.object(self.exp, 'exportgit'):
             self.exp.exportAll()
@@ -43,6 +43,12 @@ class GitExportTest(testutils.TestCase):
                 [mock.call('repo', mock.ANY, mock.ANY, 'master', 'export-master'),
                  mock.call('repo2', mock.ANY, mock.ANY, 'b1', 'export-b1'),
                  mock.call('repo2', mock.ANY, mock.ANY, 'master', 'export-master')])
+
+    def test_exportBranchesError(self):
+        with mock.patch.object(self.exp, 'exportgit'):
+            self.exp.exportgit.side_effect = lambda *x: 1/0
+            self.assertRaises(ZeroDivisionError,
+                self.exp.exportBranches, 'repo', self.Git)
 
     def test_cloneGit(self):
         with mock.patch('os.chdir') as cd:

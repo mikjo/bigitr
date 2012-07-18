@@ -18,7 +18,7 @@ class AppConfig(config.Config):
     def __init__(self, configFileName):
         config.Config.__init__(self, configFileName, {
             'onerror': 'abort',
-            'resetids': 'true'})
+            'preimport': 'true'})
 
     def getGitDir(self):
         return self.get('global', 'gitdir')
@@ -38,9 +38,6 @@ class AppConfig(config.Config):
     def getImportCVSDir(self):
         return self.get('import', 'cvsdir')
     
-    def getResetIds(self):
-        return self.getboolean('import', 'resetids')
-
     def getExportPreImport(self):
         return self.getboolean('export', 'preimport')
 

@@ -35,6 +35,16 @@ logdir = %s''' %self.logdir)
             self.assertEqual(os.stat('/'.join((thislog, filename))).st_size, 0)
         self.assertEqual(len(files), 2)
 
+    def test_writeError(self):
+        l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
+        l.writeError('this is a test\n')
+        thislog = '/'.join((self.logdir, 'repo2'))
+        files = os.listdir(thislog)
+        err = [x for x in files if x.endswith('.err')][0]
+        self.assertTrue('this is a test\n' in
+                        open('/'.join((self.logdir, 'repo2', err))).read())
+        l.close()
+
     def test_OutputNoErrors(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         os.write(l.stdout, 'this is a test\n')

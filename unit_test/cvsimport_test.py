@@ -13,6 +13,7 @@ class CVSImportTest(testutils.TestCase):
                 appConfig = StringIO('[global]\n'
                                      'logdir = /logdir\n'
                                      'gitdir = /gitdir\n'
+                                     '[import]\n'
                                      '[export]\n'
                                      'cvsdir = /cvsdir\n')
                 repConfig = StringIO('[repo]\n'
@@ -40,7 +41,7 @@ class CVSImportTest(testutils.TestCase):
         #self.imp.importcvs = self.importcvs
         pass
 
-    # tests importBranches thoroughly
+    # tests importBranches normal use thoroughly
     def test_importAll(self):
         with mock.patch.object(self.imp, 'importcvs'):
             self.imp.importAll()
@@ -48,6 +49,12 @@ class CVSImportTest(testutils.TestCase):
                 [mock.call('repo', mock.ANY, mock.ANY, 'b1', 'cvs-b1'),
                  mock.call('repo2', mock.ANY, mock.ANY, 'b1', 'cvs-b1'),
                  mock.call('repo2', mock.ANY, mock.ANY, 'b2', 'cvs-b2')])
+
+    def test_importBranchesError(self):
+        with mock.patch.object(self.imp, 'importcvs'):
+            self.imp.importcvs.side_effect = lambda *x: 1/0
+            self.assertRaises(ZeroDivisionError,
+                self.imp.importBranches, 'repo', mock.Mock())
 
     def test_merge(self):
         Git = mock.Mock()

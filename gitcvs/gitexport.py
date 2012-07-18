@@ -2,12 +2,14 @@ import os
 import shell
 import time
 
+import errhandler
 import git
 import cvs
 
 class Exporter(object):
     def __init__(self, ctx):
         self.ctx = ctx
+        self.err = errhandler.Errors(ctx)
 
     def exportAll(self):
         for repository in self.ctx.getRepositories():
@@ -15,10 +17,14 @@ class Exporter(object):
             self.exportBranches(repository, Git)
 
     def exportBranches(self, repository, Git):
+        onerror = self.ctx.getExportError()
         for gitbranch, cvsbranch, exportbranch in self.ctx.getExportBranchMaps(
                 repository):
             CVS = cvs.CVS(self.ctx, repository, cvsbranch)
-            self.exportgit(repository, Git, CVS, gitbranch, exportbranch)
+            try:
+                self.exportgit(repository, Git, CVS, gitbranch, exportbranch)
+            except Exception as e:
+                self.err(repository, onerror)
 
     def exportgit(self, repository, Git, CVS, gitbranch, exportbranch):
         gitDir = self.ctx.getGitDir()

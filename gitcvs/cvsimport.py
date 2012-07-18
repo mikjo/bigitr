@@ -2,6 +2,7 @@ import os
 import shell
 import time
 
+import errhandler
 import git
 import cvs
 
@@ -10,6 +11,7 @@ from gitcvs import util
 class Importer(object):
     def __init__(self, ctx):
         self.ctx = ctx
+        self.err = errhandler.Errors(ctx)
 
     def importAll(self):
         for repository in self.ctx.getRepositories():
@@ -17,9 +19,13 @@ class Importer(object):
             self.importBranches(repository, Git)
 
     def importBranches(self, repository, Git):
+        onerror = self.ctx.getImportError()
         for cvsbranch, gitbranch in self.ctx.getImportBranchMaps(repository):
             CVS = cvs.CVS(self.ctx, repository, cvsbranch)
-            self.importcvs(repository, Git, CVS, cvsbranch, gitbranch)
+            try:
+                self.importcvs(repository, Git, CVS, cvsbranch, gitbranch)
+            except Exception as e:
+                self.err(repository, onerror)
 
     def importcvs(self, repository, Git, CVS, cvsbranch, gitbranch):
         gitDir = self.ctx.getGitDir()

@@ -169,7 +169,6 @@ A bigitr.conf file has three sections:
 
     [import]
     onerror = abort # abort|warn|continue
-    resetids = true # false to leave $cvsid:...$ alone
     cvsdir = /path/to/directory/for/cvs/export
 
     [export]
@@ -205,7 +204,6 @@ configuration might be:
 
     [import]
     onerror = abort
-    resetids = true
     cvsdir = ${BIGITR_DATA}/export
 
     [export]
@@ -321,9 +319,9 @@ will be merged onto the `bar` and `baz` branches in git; furthermore,
 if the merge onto `bar` is successful, `bar` will then be merged onto
 `master`.
 
-When doing a git branch export with `export.preimport = true`,
-if there are any merge failures from the preimport, then the git
-branch export will be aborted.
+When doing a git branch export with the default setting of
+`export.preimport = true`, if there are any merge failures from
+the preimport, then the git branch export will be aborted.
 
 All hooks are run in the obvious directory; git hooks are run in a
 git working directory with the specified branch checked out, and
