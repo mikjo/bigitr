@@ -376,3 +376,46 @@ use of "with").
 Bigitr requires nose (may be packaged as python-nose), coverage
 (may be packaged as python-coverage), and mock (may be packaged as
 python-mock).  The documentation is maintained in markdown.
+
+
+Contributing
+============
+
+Reporting bugs is a contribution.
+
+For contributing modifications, the following description describes
+the policy which will be used for evaluating and possibly accepting
+the modifications.  It does not supersede any terms of the license.
+
+If you make modifications, you may offer those modifications
+to be included bigitr by using a "pull request" in Github.  All
+contributions must be under the terms and conditions of the Apache
+License; contributions offered otherwise will not be accepted.
+
+In order to avoid merge failures, we request that your ``prominent
+notices stating that You changed the files'' as required by the
+Apache License be in the form of correct and complete name and correct
+email address in the `Author` field of the Git commits that you
+submit, rather than changes to the *contents* of the files that you
+modify.  You may, of course, add appropriate copyright statements.
+
+Contributions which include modifications to the source code are
+expected to include appropriate tests for the changes.
+
+
+License
+=======
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Copyright 2012 SAS Institute
