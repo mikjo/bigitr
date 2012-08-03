@@ -37,6 +37,7 @@ class Errors(object):
         errmsg = ("Error for repository '%s':\n" %repo) + ''.join(
             traceback.format_exception(*exception))
         self.ctx.logs[repo].writeError(errmsg)
+        self.ctx.mails[repo].addAttachment(errmsg, 'Traceback')
 
         if action == appconfig.WARN:
             # also print error to stderr; ABORT will end up on

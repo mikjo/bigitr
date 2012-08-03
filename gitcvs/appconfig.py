@@ -33,7 +33,8 @@ class AppConfig(config.Config):
     def __init__(self, configFileName):
         config.Config.__init__(self, configFileName, {
             'onerror': 'abort',
-            'preimport': 'true'})
+            'preimport': 'true',
+            'smarthost': 'localhost'})
 
     def getGitDir(self):
         return self.get('global', 'gitdir')

@@ -16,6 +16,7 @@
 
 import gzip
 import logging
+import mock
 import os
 from cStringIO import StringIO
 import tempfile
@@ -41,19 +42,16 @@ logdir = %s
 
     def tearDown(self):
         logging.getLogger().removeHandler(self.handler)
-        for b, dirs, files in os.walk(self.logdir, topdown=False):
-            for f in files:
-                os.remove('/'.join((b, f)))
-            for d in dirs:
-                os.rmdir('/'.join((b, d)))
-        os.removedirs(self.logdir)
+        self.removeRecursive(self.logdir)
 
     def test_Empty(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         s = shell.LoggingShell(l, 'true')
         self.assertEqual(l.lastOutput(), (None, None))
+        self.assertEqual(l.lastError(), None)
         retcode = s.finish()
         self.assertEqual(l.lastOutput(), ('', ''))
+        self.assertEqual(l.lastError(), '')
         self.assertEqual(retcode, 0)
         l.close()
         thislog = '/'.join((self.logdir, 'repo2'))
@@ -135,24 +133,21 @@ logdir = %s
         s = shell.LoggingShell(l, 'false')
         self.assertRaises(ValueError, s.finish)
         l.close()
-        self.assertTrue(' COMPLETE with return code: 1\n'
-                        in self.logdata.getvalue())
+        self.assertTrue(self.logdata.getvalue().startswith('\n'))
         self.logdata.truncate(0)
 
     def test_runRaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         self.assertRaises(ValueError, shell.run, l, 'false')
         l.close()
-        self.assertTrue(' COMPLETE with return code: 1\n'
-                        in self.logdata.getvalue())
+        self.assertTrue(self.logdata.getvalue().startswith('\n'))
         self.logdata.truncate(0)
 
     def test_readRaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         self.assertRaises(ValueError, shell.read, l, 'false')
         l.close()
-        self.assertTrue(' COMPLETE with return code: 1\n'
-                        in self.logdata.getvalue())
+        self.assertTrue(self.logdata.getvalue().startswith('\n'))
         self.logdata.truncate(0)
 
     def test_run(self):
@@ -203,3 +198,8 @@ logdir = %s
         retcode = shell.run(l, 'sh', '-c', 'echo bar; echo baz; echo foo >&2 ; exit 1', error=False)
         self.assertEqual(retcode, 1)
         self.assertEqual(l.lastOutput(), ('bar\nbaz\n', 'foo\n'))
+        self.assertEqual(l.lastError(), 'foo\n')
+        ao = mock.Mock()
+        self.ctx.mails['Path/To/Git/repo2'].addOutput = ao
+        l.mailLastOutput('broke')
+        ao.assert_called_with('broke', 'bar\nbaz\n', 'foo\n')

@@ -49,7 +49,7 @@ class LoggingShell(subprocess.Popen):
         os.write(self.log.stderr, finish)
         os.write(self.log.stdout, finish)
         if retcode and self.error:
-            for line in open(self.log.thiserr):
+            for line in self.log.lastError().split('\n'):
                 logging.error(line)
             logging.error(self.log.thiserr)
             raise ValueError('Unexpected return code %d' %retcode)

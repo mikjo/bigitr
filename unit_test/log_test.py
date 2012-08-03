@@ -35,12 +35,7 @@ logdir = %s''' %self.logdir)
         self.ctx = context.Context(appConfig, repConfig)
 
     def tearDown(self):
-        for b, dirs, files in os.walk(self.logdir, topdown=False):
-            for f in files:
-                os.remove('/'.join((b, f)))
-            for d in dirs:
-                os.rmdir('/'.join((b, d)))
-        os.removedirs(self.logdir)
+        self.removeRecursive(self.logdir)
 
     def test_Empty(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)

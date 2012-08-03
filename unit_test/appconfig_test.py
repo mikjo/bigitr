@@ -75,6 +75,10 @@ cvsdir = /path/to/directory/for/cvs/checkouts/for/branch/imports
         self.assertEqual(self.cfg.getSmartHost(),
             'smtp.smarthost.name')
 
+    def test_getSmartHostDefault(self):
+        self.assertEqual(self.cfgdef.getSmartHost(),
+            'localhost')
+
     def test_getImportError(self):
         self.assertEqual(self.cfg.getImportError(),
             appconfig.CONTINUE)

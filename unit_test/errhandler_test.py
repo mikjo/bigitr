@@ -70,6 +70,7 @@ class TestErrors(testutils.TestCase):
     def test_report(self):
         with mock.patch('sys.stderr') as e:
             self.ctx.logs['repo1'].writeError = mock.Mock()
+            self.ctx.mails['repo1'].addAttachment = mock.Mock()
             try:
                 self.inner()
             except:
@@ -82,6 +83,8 @@ class TestErrors(testutils.TestCase):
                     "Error for repository 'repo1':\nTraceback"))
             e.flush.assert_called_once_with()
 
+            self.ctx.mails['repo1'].addAttachment.assert_called_once_with(
+                mock.ANY, 'Traceback')
             self.ctx.logs['repo1'].writeError.assert_called_once()
             self.assertTrue(
                 self.ctx.logs['repo1'].writeError.call_args[0][0].startswith(
@@ -90,6 +93,7 @@ class TestErrors(testutils.TestCase):
     def test_reportContinue(self):
         with mock.patch('sys.stderr') as e:
             self.ctx.logs['repo1'].writeError = mock.Mock()
+            self.ctx.mails['repo1'].addAttachment = mock.Mock()
             try:
                 self.inner()
             except:
@@ -98,6 +102,8 @@ class TestErrors(testutils.TestCase):
             e.write.assert_not_called()
             e.flush.assert_not_called()
 
+            self.ctx.mails['repo1'].addAttachment.assert_called_once_with(
+                mock.ANY, 'Traceback')
             self.ctx.logs['repo1'].writeError.assert_called_once()
             self.assertTrue(
                 self.ctx.logs['repo1'].writeError.call_args[0][0].startswith(

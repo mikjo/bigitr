@@ -15,7 +15,6 @@
 #
 
 import os
-import shell
 import time
 
 import errhandler

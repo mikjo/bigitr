@@ -64,4 +64,5 @@ class TestUtil(testutils.TestCase):
             self.assertFalse(os.path.exists.called)
 
     def test_listFiles(self):
-        self.assertEqual(util.listFiles(self.s), ['b', 'a', 'dir/metoo'])
+        self.assertEqual(sorted(util.listFiles(self.s)),
+                         ['a', 'b', 'dir/metoo'])

@@ -15,7 +15,6 @@
 #
 
 import os
-import shell
 import time
 
 import errhandler
@@ -157,9 +156,10 @@ class Importer(object):
                 ).get(gitbranch, set()):
             Git.checkout(target)
             Git.mergeFastForward('origin/' + target)
-            rc = Git.mergeDefault(gitbranch,
-                "Automated merge '%s' into '%s'" %(gitbranch, target))
+            mergeMsg = "Automated merge '%s' into '%s'" %(gitbranch, target)
+            rc = Git.mergeDefault(gitbranch, mergeMsg)
             if rc != 0:
+                Git.log.mailLastOutput(mergeMsg)
                 success = False
             else:
                 Git.push('origin', target, target)

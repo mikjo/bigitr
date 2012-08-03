@@ -63,11 +63,19 @@ class Log(object):
         f.seek(start)
         return f.read(stop - start)
 
+    def lastError(self):
+        if None in (self.start_mark + self.stop_mark):
+            return None
+        return self.read(self.thiserr, self.start_mark[1], self.stop_mark[1])
+
     def lastOutput(self):
         if None in (self.start_mark + self.stop_mark):
             return (None, None)
         return (self.read(self.thislog, self.start_mark[0], self.stop_mark[0]),
                 self.read(self.thiserr, self.start_mark[1], self.stop_mark[1]))
+
+    def mailLastOutput(self, command):
+        self.ctx.mails[self.repo].addOutput(command, *self.lastOutput())
 
     @staticmethod
     def compress(filename):
@@ -83,7 +91,9 @@ class Log(object):
 
         if errstat.st_size:
             # errors have been written
-            self.mailErrors()
+            self.ctx.mails[self.repo].send(
+                file(self.thislog).read(),
+                file(self.thiserr).read())
             self.compress(self.thiserr)
             os.remove(self.thiserr)
 
@@ -93,10 +103,6 @@ class Log(object):
 
         if self.cache and self.cache():
             del self.cache()[self.repo]
-
-    def mailErrors(self):
-        # FIXME: this needs to be implemented for automation
-        pass
 
 class LogCache(dict):
     def __init__(self, ctx):

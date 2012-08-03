@@ -21,6 +21,7 @@ import os
 import appconfig
 import repositorymap
 import log
+import mail
 
 class Context(object):
     def __init__(self, appConfig, repoConfig):
@@ -28,6 +29,7 @@ class Context(object):
         self._ac = appconfig.AppConfig(appConfig)
         self._rm = repositorymap.RepositoryConfig(repoConfig)
         self.logs = log.LogCache(self)
+        self.mails = mail.MailCache(self)
     
     def __getattr__(self, attr):
         # fallback: multiplex rather than mixin
