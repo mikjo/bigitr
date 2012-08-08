@@ -122,6 +122,10 @@ class Exporter(object):
             CVS.update()
         else:
             CVS.checkout()
+            if not os.path.exists(CVS.path):
+                raise RuntimeError("CVS branch '%s' for location '%s' does not exist"
+                                   %(CVS.branch, CVS.location))
+
 
     def prepareGitClone(self, Git, gitbranch, repository):
         Git.fetch()

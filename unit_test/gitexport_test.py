@@ -86,11 +86,27 @@ class GitExportTest(testutils.TestCase):
     def test_checkoutCVS(self):
         with mock.patch('os.makedirs') as md:
             with mock.patch('os.path.exists') as exists:
-                exists.return_value = False
+                exists.side_effect = [False, False, True]
                 self.CVS.path = '/cvsdir/repo/b1/Loc'
                 self.exp.checkoutCVS(self.CVS)
                 exists.assert_has_calls([
                     mock.call('/cvsdir/repo/b1'),
+                    mock.call('/cvsdir/repo/b1/Loc'),
+                    mock.call('/cvsdir/repo/b1/Loc')])
+                md.assert_called_once_with('/cvsdir/repo/b1')
+                self.CVS.checkout.assert_called_once_with()
+                self.CVS.update.assert_not_called()
+
+    def test_checkoutCVSEmpty(self):
+        'Raise a useful error if the directory does not exist'
+        with mock.patch('os.makedirs') as md:
+            with mock.patch('os.path.exists') as exists:
+                exists.return_value = False
+                self.CVS.path = '/cvsdir/repo/b1/Loc'
+                self.assertRaises(RuntimeError, self.exp.checkoutCVS, self.CVS)
+                exists.assert_has_calls([
+                    mock.call('/cvsdir/repo/b1'),
+                    mock.call('/cvsdir/repo/b1/Loc'),
                     mock.call('/cvsdir/repo/b1/Loc')])
                 md.assert_called_once_with('/cvsdir/repo/b1')
                 self.CVS.checkout.assert_called_once_with()
