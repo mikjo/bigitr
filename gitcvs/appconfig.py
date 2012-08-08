@@ -43,7 +43,9 @@ class AppConfig(config.Config):
         return self.get('global', 'logdir')
 
     def getMailFrom(self):
-        return self.get('global', 'mailfrom')
+        if self.has_option('global', 'mailfrom'):
+            return self.get('global', 'mailfrom')
+        return None
 
     def getSmartHost(self):
         return self.get('global', 'smarthost')

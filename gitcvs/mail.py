@@ -30,8 +30,9 @@ def ifEmail(fn):
 class Email(object):
     def __init__(self, ctx, repo, cache):
         self.recipients = ctx.getEmail(repo)
+        self.mailfrom = ctx.getMailFrom()
         self.ignore = False
-        if self.recipients is None:
+        if self.recipients is None or self.mailfrom is None:
             self.ignore = True
             return
 
@@ -42,7 +43,7 @@ class Email(object):
         self.repo = repo
         self.msg = MIMEMultipart()
         self.msg['Subject'] = '%s: bigitr error report' % repo
-        self.msg['From'] = ctx.getMailFrom()
+        self.msg['From'] = self.mailfrom
         self.msg['To'] = ', '.join(self.recipients)
         self.msg.preamble = 'Bigitr error report for repository %s' % repo
 

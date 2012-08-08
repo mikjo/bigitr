@@ -71,6 +71,10 @@ cvsdir = /path/to/directory/for/cvs/checkouts/for/branch/imports
         self.assertEqual(self.cfg.getMailFrom(),
             'sendinguser@host')
 
+    def test_getMailFromEmpty(self):
+        self.assertEqual(self.cfgdef.getMailFrom(),
+            None)
+
     def test_getSmartHost(self):
         self.assertEqual(self.cfg.getSmartHost(),
             'smtp.smarthost.name')

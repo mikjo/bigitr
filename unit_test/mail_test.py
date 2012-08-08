@@ -66,6 +66,14 @@ email = re@cip1 re@cip2
             m.addOutput('foo', 'out', 'err')
             m.addAttachment.assert_not_called()
 
+    def test_noMailFrom(self):
+        self.ctx._ac.remove_option('global', 'mailfrom')
+        m = self.ctx.mails['repo1']
+        self.assertEqual(m.ignore, True)
+        with mock.patch('gitcvs.mail.Email.addAttachment'):
+            m.addOutput('foo', 'out', 'err')
+            m.addAttachment.assert_not_called()
+
     def test_recipient(self):
         m = self.ctx.mails['repo1']
         self.assertEqual(m.ignore, False)
