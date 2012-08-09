@@ -450,7 +450,8 @@ A typical life cycle for Bigitr is envisioned to be:
 Contributing
 ============
 
-Reporting bugs is a contribution.
+Reporting bugs is a contribution.  Please report bugs using the
+github issue tracker at https://github.com/mikjo/bigitr/issues
 
 For contributing modifications, the following description describes
 the policy which will be used for evaluating and possibly accepting
