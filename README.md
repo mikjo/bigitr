@@ -332,15 +332,15 @@ cvs hooks are run in a cvs checkout in which the specified branch
 is a sticky tag.  The pre hooks are run before a commit operation,
 and post hooks are run after all post-commit operations are complete;
 for example, the cvs post hooks are run after fast-forwarding the
-export- branch.  Git post hooks are run before merging downstream
+`export-` branch.  Git post hooks are run before merging downstream
 branches, and Git post hooks (but not pre hooks at this time; this
 may be changed later) are run for each merge target as well as for
 cvs import branches.
 
-Per-branch hooks (e.g. prehook.git.master) are run in addition to
-general hooks (e.g. prehook.git) and the general hooks are run
-first.  Per-direction hooks (e.g. prehook.imp.git,
-prehook.imp.git.master) are are run after their bidirectional
+Per-branch hooks (e.g. `prehook.git.master`) are run in addition to
+general hooks (e.g. `prehook.git`) and the general hooks are run
+first.  Per-direction hooks (e.g. `prehook.imp.git`,
+`prehook.imp.git.master`) are are run after their bidirectional
 equivalents.
 
 Hooks that modify Git state are generally discouraged.  Committing
@@ -395,8 +395,8 @@ to be included bigitr by using a "pull request" in Github.  All
 contributions must be under the terms and conditions of the Apache
 License; contributions offered otherwise will not be accepted.
 
-In order to avoid merge failures, we request that your ``prominent
-notices stating that You changed the files'' as required by the
+In order to avoid merge failures, we request that your "prominent
+notices stating that You changed the files" as required by the
 Apache License be in the form of correct and complete name and correct
 email address in the `Author` field of the Git commits that you
 submit, rather than changes to the *contents* of the files that you
