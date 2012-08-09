@@ -3,6 +3,8 @@ Bigitr
 
 Bigitr is a tool that copies content bidirectionally between Git
 and CVS repositories in an asynchronous and asymmetric fashion.
+(You can configure only CVS->Git, only Git->CVS, or bidirectional
+copying; separately for each repository you are synchronizing.)
 The name *Bigitr* is intended to convey at least bidirectionality,
 an emphasis on Git over CVS, and that it helps to *beget* Git
 repositories from CVS repositories.
@@ -351,18 +353,40 @@ contents of files to be committed in ways that are not implemented
 as specific configuration.  The main use for post hooks is arbitrary
 notification.
 
+### Tool configuration ###
+
+Bigitr intentionally honors Git and CVS configuration.  That is,
+it is intended to be used with appropriate `.gitconfig` and
+`.cvsrc` files in place.  Git configuration should include at
+least appropriate configuration of `user.name` and `user.email`.
+Bigitr invokes `cvs diff` without format arguments, assuming that
+you will have chosen configuration for your preferred diff format.
+An appropriate .cvsrc might include lines such as:
+
+    diff -uN
+    update -Pd
+
+Bigitr does not handle authentication; it assumes that Git and CVS
+are set up already authenticated.  You will have to run `cvs login`
+before running Bigitr if your configuration requires CVS login
+authentication.
+
+
 
 Requirements
 ============
 
 Bigitr depends on precise behavior of Git and CVS, and on the "-i"
 option to sed.  The behavior of this tool should be validated after
-ANY update to any of the programs which it calls: git, cvs, and sed,
+*any* update to any of the programs which it calls: git, cvs, and sed,
 as well as after any other update that might affect them (libraries,
 system language configuration, etc.).  A test suite is provided to
 help validate this behavior.  If you discover failures not exposed by
 the test suite, please augment the test suite.  In particular,
 additional functional tests or story tests would be appropriate.
+To run all the tests, invoke the command `make alltests` and confirm
+that all the tests complete successfully.
+
 This tool automates only (part of) the **process** of synchronization
 between Git and CVS branches.  It does not automate any **monitoring**
 of the results.  *Do not relax monitoring because you are using it.*
@@ -379,6 +403,48 @@ use of "with").
 Bigitr requires nose (may be packaged as python-nose), coverage
 (may be packaged as python-coverage), and mock (may be packaged as
 python-mock).  The documentation is maintained in markdown.
+
+
+
+Status
+======
+
+As of this writing, Bigitr is considered alpha-quality software.
+It has been tested with a few dozen CVS/Git repository pairs.
+It is in active production use with close monitoring.  It is
+actively maintained.
+
+
+
+Life Cycle
+==========
+
+A typical life cycle for Bigitr is envisioned to be:
+
+* Introduced to allow developers to use Git for new development
+  while still enabling processes based on CVS.  Synchronization
+  is done bidirectionally, because some processes or people might
+  still commit to CVS even through primary development has moved
+  to Git.
+
+* Several older CVS branches are imported into Git, with automatic
+  merging configured into `master`, so that maintenance fixes done
+  in CVS for older versions maintained in CVS will be applied also
+  in the latest product maintained in Git.
+
+* Git and CVS repository hooks are installed to call Bigitr on
+  push or commit, respectively.
+
+* All processes/people then move to Git for source code control, so
+  Git branches no longer need to be exported to CVS.  At this time,
+  the configuration is modified to disabled export of Git branches
+  to CVS branches, but the import and merge configuration is retained.
+  The Git repository hooks are therefore removed, so Bigitr is invoked
+  only when CVS commits occur.
+
+* All old maintenance branches in CVS are no longer maintained in
+  CVS, and Bigitr is no longer used.
+
 
 
 Contributing
@@ -403,7 +469,9 @@ submit, rather than changes to the *contents* of the files that you
 modify.  You may, of course, add appropriate copyright statements.
 
 Contributions which include modifications to the source code are
-expected to include appropriate tests for the changes.
+requested to include appropriate tests for the changes.  New or
+modified tests should cover all of the changed and affected code,
+maintaining 100% code coverage overall.
 
 
 License
