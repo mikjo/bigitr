@@ -23,7 +23,10 @@ reference is merged onto the local `master` branch.  Similarly, in
 Bigitr, the Git `master` branch might be exported to a CVS branch
 named `current-dev`, which is then imported into a Git branch named
 `cvs-current-dev`, which then might be merged back into the Git
-`master` branch.
+`master` branch.  A remote `export-master` branch tracks what has
+been exported from the `master` branch to CVS.
+
+![dataflow](doc/dataflow.svg)
 
 The bidirectional synchronization is not intended to allow developers
 to develop in their choice of CVS or Git indefinitely.  Bigitr should
