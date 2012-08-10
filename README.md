@@ -169,6 +169,7 @@ A bigitr.conf file has three sections:
     [global]
     gitdir = /path/to/directory/holding/git/repositories
     logdir = /path/to/log/directory
+    compresslogs = true
     mailfrom = sendinguser@host
     smarthost = smtp.smarthost.name
 
@@ -195,9 +196,9 @@ value.  When Bigitr is not running, it is not generally harmful
 to remove any of the directories; Bigitr will re-create them as
 necessary.  The logs are voluminous, and contain errors and output
 created while Bigtr is running.  This includes errors and output
-from hooks.  The logs will be compressed.  They are intended to
-be potentially useful for forensic investigation when things go
-wrong.
+from hooks.  The logs will be compressed unless `global.compresslogs`
+is set to `false`.  They are intended to be potentially useful for
+forensic investigation when things go wrong.
 
 In order to share configuration between users, it is best to use
 environment variables for variable parts of the path.  A typical

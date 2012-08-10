@@ -77,11 +77,13 @@ class Log(object):
     def mailLastOutput(self, command):
         self.ctx.mails[self.repo].addOutput(command, *self.lastOutput())
 
-    @staticmethod
-    def compress(filename):
+    def _compress(self, filename):
+        if not self.ctx.getCompressLogs():
+            return
         gzo = gzip.GzipFile(filename + '.gz', 'w', 9)
         gzo.writelines(open(filename))
         gzo.close()
+        os.remove(filename)
 
     def close(self):
         outstat = os.fstat(self.stdout)
@@ -94,12 +96,10 @@ class Log(object):
             self.ctx.mails[self.repo].send(
                 file(self.thislog).read(),
                 file(self.thiserr).read())
-            self.compress(self.thiserr)
-            os.remove(self.thiserr)
+            self._compress(self.thiserr)
 
         if outstat.st_size:
-            self.compress(self.thislog)
-            os.remove(self.thislog)
+            self._compress(self.thislog)
 
         if self.cache and self.cache():
             del self.cache()[self.repo]

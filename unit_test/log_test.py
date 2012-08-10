@@ -81,6 +81,21 @@ logdir = %s''' %self.logdir)
         sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
         self.assertTrue(0 not in sizes)
 
+    def test_ErrorAndStandardOutputNoCompress(self):
+        self.ctx._ac.set('global', 'compresslogs', 'false')
+        l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
+        os.write(l.stdout, 'this is a test of standard output\n')
+        os.write(l.stderr, 'this is a test of error output\n')
+        l.close()
+        thislog = '/'.join((self.logdir, 'repo2'))
+        files = os.listdir(thislog)
+        self.assertEqual(len([x for x in files if x.endswith('.gz')]), 0)
+        self.assertEqual(len([x for x in files if x.endswith('.log')]), 1)
+        self.assertEqual(len([x for x in files if x.endswith('.err')]), 1)
+        self.assertEqual(len(files), 2)
+        sizes = set(os.stat('/'.join((thislog, x))).st_size for x in files)
+        self.assertTrue(0 not in sizes)
+
     def test_ErrorOutput(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         os.write(l.stderr, 'this is a test\n')

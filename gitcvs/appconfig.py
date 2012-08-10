@@ -32,9 +32,13 @@ onerror = {
 class AppConfig(config.Config):
     def __init__(self, configFileName):
         config.Config.__init__(self, configFileName, {
+            'compresslogs': 'true',
             'onerror': 'abort',
             'preimport': 'true',
             'smarthost': 'localhost'})
+
+    def getCompressLogs(self):
+        return self.getboolean('global', 'compresslogs')
 
     def getGitDir(self):
         return self.get('global', 'gitdir')

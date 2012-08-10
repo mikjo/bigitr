@@ -63,6 +63,7 @@ class TestStory(unittest.TestCase):
         appConfig = StringIO('[global]\n'
                              'logdir = %s\n'
                              'gitdir = %s\n'
+                             'compresslogs = false\n'
                              '[export]\n'
                              'cvsdir = %s\n'
                              '[import]\n'
