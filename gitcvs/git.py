@@ -17,6 +17,8 @@
 import os
 import shell
 
+import util
+
 class Git(object):
     def __init__(self, ctx, repo):
         self.ctx = ctx
@@ -146,6 +148,36 @@ class Git(object):
         _, messages = shell.read(self.log,
             'git', 'log', '%s..%s' %(since, until))
         return messages
+
+    def initializeGitRepository(self, create=True):
+        gitDir = self.ctx.getGitDir()
+        repoName = self.ctx.getRepositoryName(self.repo)
+        repoDir = '/'.join((gitDir, repoName))
+        skeleton = self.ctx.getSkeleton(self.repo)
+
+        if not os.path.exists(repoDir):
+            os.chdir(gitDir)
+            self.clone(self.ctx.getGitRef(self.repo))
+            os.chdir(repoDir)
+            refs = self.refs()
+            if not refs:
+                if not create:
+                    raise RuntimeError('repository %s has not been populated'
+                                       %self.repo)
+                # master branch needs to exist, so use skeleton or .gitignore
+                if skeleton:
+                    skelFiles = util.listFiles(skeleton)
+                    util.copyFiles(skeleton, repoDir, skelFiles)
+                else:
+                    gitignore = file('/'.join((repoDir, '.gitignore')), 'w')
+                    exportDir = self.ctx.getCVSExportDir(self.repo)
+                    cvsignoreName = '/'.join((exportDir, '.cvsignore'))
+                    if os.path.exists(cvsignoreName):
+                        gitignore.write(file(cvsignoreName).read())
+                    gitignore.close()
+                self.addAll()
+                self.commit('create new empty master branch')
+                self.push('origin', 'master', 'master')
 
     def runImpPreHooks(self, branch):
         for hook in self.ctx.getGitImpPreHooks(self.repo, branch):

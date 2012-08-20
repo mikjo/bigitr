@@ -26,13 +26,13 @@ class RepositoryConfig(config.Config):
     def __init__(self, configFileName):
         config.Config.__init__(self, configFileName)
         # enforce uniqueness
-        repos = {}
+        self.repos = {}
         for r in self.getRepositories():
             name = self.getRepositoryName(r)
-            if name in repos:
+            if name in self.repos:
                 raise KeyError('Duplicate repository name %s: %s and %s'
-                               %(name, repos[name], r))
-            repos[name] = r
+                               %(name, self.repos[name], r))
+            self.repos[name] = r
         self.requireAbsolutePaths('skeleton')
 
     def getDefault(self, section, key, error=True):
@@ -56,6 +56,11 @@ class RepositoryConfig(config.Config):
     @staticmethod
     def getRepositoryName(repository):
         return os.path.basename(repository)
+
+    def getRepositoryByName(self, repositoryName):
+        if self.has_section(repositoryName):
+            return repositoryName
+        return self.repos[repositoryName]
 
     def getCVSRoot(self, repository):
         return self.getDefault(repository, 'cvsroot')

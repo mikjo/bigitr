@@ -17,11 +17,11 @@
 import os
 import time
 
+import cvs
 import errhandler
 import git
-import cvs
-
-from gitcvs import util
+import gitmerge
+import util
 
 class Importer(object):
     def __init__(self, ctx):
@@ -48,7 +48,6 @@ class Importer(object):
         repoDir = '/'.join((gitDir, repoName))
         skeleton = self.ctx.getSkeleton(repository)
         exportDir = self.ctx.getCVSExportDir(repository)
-        success = True
 
         if os.path.exists(exportDir):
             util.removeRecursive(exportDir)
@@ -62,25 +61,7 @@ class Importer(object):
         os.chdir(exportDir)
         CVS.disableLogKeyword(exportedFiles)
 
-        if not os.path.exists(repoDir):
-            os.chdir(gitDir)
-            Git.clone(self.ctx.getGitRef(repository))
-            os.chdir(repoDir)
-            refs = Git.refs()
-            if not refs:
-                # master branch needs to exist, so use skeleton or .gitignore
-                if skeleton:
-                    skelFiles = util.listFiles(skeleton)
-                    util.copyFiles(skeleton, repoDir, skelFiles)
-                else:
-                    gitignore = file('/'.join((repoDir, '.gitignore')), 'w')
-                    cvsignoreName = '/'.join((exportDir, '.cvsignore'))
-                    if os.path.exists(cvsignoreName):
-                        gitignore.write(file(cvsignoreName).read())
-                    gitignore.close()
-                Git.addAll()
-                Git.commit('create new empty master branch')
-                Git.push('origin', 'master', 'master')
+        Git.initializeGitRepository()
 
         os.chdir(repoDir)
         addSkeleton = False
@@ -135,37 +116,5 @@ class Importer(object):
             Git.push('origin', gitbranch, gitbranch)
             Git.runImpPostHooks(gitbranch)
 
-        # try to merge downstream branches even if there was nothing to
-        # commit, because a merge conflict might have been resolved
-        if not self.merge(repository, Git, gitbranch):
-            success = False
-
-        # Status can report clean with .gitignored files existing
-        # Remove any .gitignored files added by the "cvs export"
-        Git.pristine()
-
-        if not success:
-            raise RuntimeError('merge failed for branch %s: see %s' %(
-                gitbranch, Git.log.thiserr))
-
-    def merge(self, repository, Git, gitbranch):
-        success = True
-
-        Git.pristine()
-        for target in self.ctx.getMergeBranchMaps(repository
-                ).get(gitbranch, set()):
-            Git.checkout(target)
-            Git.mergeFastForward('origin/' + target)
-            mergeMsg = "Automated merge '%s' into '%s'" %(gitbranch, target)
-            rc = Git.mergeDefault(gitbranch, mergeMsg)
-            if rc != 0:
-                Git.log.mailLastOutput(mergeMsg)
-                success = False
-            else:
-                Git.push('origin', target, target)
-                Git.runImpPostHooks(target)
-                rc = self.merge(repository, Git, target)
-                if not rc:
-                    success = False
-
-        return success
+        merger = gitmerge.Merger(self.ctx)
+        merger.mergeFrom(Git, repository, gitbranch)

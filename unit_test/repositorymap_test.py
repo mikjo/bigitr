@@ -91,6 +91,13 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
         self.assertEqual(self.cfg.getRepositoryName('Path/To/Git/repo2'),
             'repo2')
 
+    def test_getRepositoryByName(self):
+        self.assertEqual(self.cfg.getRepositoryByName('Path/To/Git/repo2'),
+            'Path/To/Git/repo2')
+        self.assertEqual(self.cfg.getRepositoryByName('repo2'),
+            'Path/To/Git/repo2')
+        self.assertRaises(KeyError, self.cfg.getRepositoryByName, 'doesnotexist')
+
     def test_getCVSRoot(self):
         self.assertEqual(self.cfg.getCVSRoot('Path/To/Git/repository'),
                          ':pserver:usr@servername:/path')

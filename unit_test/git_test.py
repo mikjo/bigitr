@@ -23,8 +23,15 @@ from gitcvs import git, shell, context
 class TestGit(testutils.TestCase):
     def setUp(self):
         with mock.patch('gitcvs.log.Log') as mocklog:
-            appConfig = StringIO('[global]\nlogdir = /logs\n')
+            appConfig = StringIO('[global]\n'
+                                 'logdir = /logs\n'
+                                 'gitdir = /git\n'
+                                 '[import]\n'
+                                 'cvsdir = /cvs\n'
+                                 '\n')
             repConfig = StringIO('[repo]\n'
+                                 'gitroot = git@host\n'
+                                 'cvspath = sub/module\n'
                                  'prehook.git = precommand arg\n'
                                  'posthook.git = postcommand arg\n'
                                  'prehook.git.brnch = precommand brnch\n'
@@ -323,6 +330,86 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             shell.read.assert_called_once_with(mock.ANY,
                 'git', 'log', 'since..until')
             self.assertEqual(msg, 'a message\n')
+
+    def test_initializeGitRepositoryWithCreateNoSkel(self):
+        foo = []
+        def inner():
+            exists.side_effect = [False, True]
+            refs.return_value = None
+            self.git.initializeGitRepository()
+            chdir.assert_has_calls([mock.call('/git'),
+                                    mock.call('/git/repo')])
+            exists.assert_has_calls([mock.call('/git/repo'),
+                                     mock.call('/cvs/repo/module/.cvsignore')])
+            clone.assert_called_once_with('git@host:repo')
+            refs.assert_called_once_with()
+            addAll.assert_called_once_with()
+            commit.assert_called_once_with('create new empty master branch')
+            push.assert_called_once_with('origin', 'master', 'master')
+            lF.assert_not_called()
+            cF.assert_not_called()
+
+        with mock.patch('os.path.exists') as exists:
+            with mock.patch('os.chdir') as chdir:
+                with mock.patch('gitcvs.git.Git.clone') as clone:
+                    with mock.patch('gitcvs.git.Git.refs') as refs:
+                        with mock.patch('gitcvs.git.Git.addAll') as addAll:
+                            with mock.patch('gitcvs.git.Git.commit') as commit:
+                                with mock.patch('gitcvs.git.Git.push') as push:
+                                    with mock.patch('gitcvs.util.listFiles') as lF:
+                                        with mock.patch('gitcvs.util.copyFiles') as cF:
+                                            with mock.patch('__builtin__.file') as mf:
+                                                inner()
+
+    def test_initializeGitRepositoryWithCreateWithSkel(self):
+        def inner():
+            self.ctx._rm.set('repo', 'skeleton', '/skeleton')
+            exists.return_value = False
+            refs.return_value = None
+            self.git.initializeGitRepository()
+            chdir.assert_has_calls([mock.call('/git'),
+                                    mock.call('/git/repo')])
+            exists.assert_has_calls([mock.call('/git/repo')])
+            clone.assert_called_once_with('git@host:repo')
+            refs.assert_called_once_with()
+            addAll.assert_called_once_with()
+            commit.assert_called_once_with('create new empty master branch')
+            push.assert_called_once_with('origin', 'master', 'master')
+            lF.assert_not_called()
+            cF.assert_not_called()
+            mf.assert_not_called()
+
+        with mock.patch('os.path.exists') as exists:
+            with mock.patch('os.chdir') as chdir:
+                with mock.patch('gitcvs.git.Git.clone') as clone:
+                    with mock.patch('gitcvs.git.Git.refs') as refs:
+                        with mock.patch('gitcvs.git.Git.addAll') as addAll:
+                            with mock.patch('gitcvs.git.Git.commit') as commit:
+                                with mock.patch('gitcvs.git.Git.push') as push:
+                                    with mock.patch('gitcvs.util.listFiles') as lF:
+                                        with mock.patch('gitcvs.util.copyFiles') as cF:
+                                            with mock.patch('__builtin__.file') as mf:
+                                                inner()
+
+    def test_initializeGitRepositoryWithNoCreate(self):
+        def inner():
+            exists.return_value = False
+            refs.return_value = None
+            self.assertRaises(RuntimeError, self.git.initializeGitRepository, create=False)
+            chdir.assert_not_called()
+
+        with mock.patch('os.path.exists') as exists:
+            with mock.patch('os.chdir') as chdir:
+                with mock.patch('gitcvs.git.Git.clone') as clone:
+                    with mock.patch('gitcvs.git.Git.refs') as refs:
+                        inner()
+
+    def test_initializeGitRepositoryAlreadyDone(self):
+        with mock.patch('os.path.exists') as e:
+            with mock.patch('os.chdir') as c:
+                e.return_value = True
+                self.git.initializeGitRepository()
+                c.assert_not_called()
 
     def test_runImpPreHooks(self):
         with mock.patch('gitcvs.git.shell.run'):
