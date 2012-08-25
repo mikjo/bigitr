@@ -54,7 +54,7 @@ class GitMergeTest(testutils.TestCase):
     def test_merge(self):
         Git = mock.Mock()
         Git.mergeDefault.return_value = 0
-        rc = self.mrg.merge(Git, 'repo2', 'cvs-b1')
+        rc = self.mrg.merge('repo2', Git, 'cvs-b1')
         Git.checkout.assert_has_calls([mock.call('b1'), mock.call('b2')])
         Git.mergeFastForward.assert_has_calls(
             [mock.call('origin/b1'), mock.call('origin/b2')])
@@ -67,7 +67,7 @@ class GitMergeTest(testutils.TestCase):
         )
         self.assertTrue(rc)
         Git.reset_mock()
-        rc = self.mrg.merge(Git, 'repo2', 'cvs-b2')
+        rc = self.mrg.merge('repo2', Git, 'cvs-b2')
         Git.checkout.assert_called_once_with('b2')
         Git.mergeDefault.assert_called_once_with(
             'cvs-b2', "Automated merge 'cvs-b2' into 'b2'")
@@ -77,21 +77,21 @@ class GitMergeTest(testutils.TestCase):
     def test_mergeFailure(self):
         Git = mock.Mock()
         Git.mergeDefault.return_value = 1
-        rc = self.mrg.merge(Git, 'repo2', 'cvs-b1')
+        rc = self.mrg.merge('repo2', Git, 'cvs-b1')
         Git.checkout.assert_has_calls([mock.call('b1'), mock.call('b2')])
         self.assertFalse(rc)
 
     def test_mergeCascade(self):
         Git = mock.Mock()
         Git.mergeDefault.return_value = 0
-        rc = self.mrg.merge(Git, 'repo', 'cvs-b1')
+        rc = self.mrg.merge('repo', Git, 'cvs-b1')
         Git.checkout.assert_has_calls([mock.call('b1'), mock.call('master')])
         self.assertTrue(rc)
 
     def test_mergeFailureNoCascade(self):
         Git = mock.Mock()
         Git.mergeDefault.return_value = 1
-        rc = self.mrg.merge(Git, 'repo', 'cvs-b1')
+        rc = self.mrg.merge('repo', Git, 'cvs-b1')
         Git.checkout.assert_called_once_with('b1') # not 'master'
         self.assertFalse(rc)
 
@@ -99,7 +99,7 @@ class GitMergeTest(testutils.TestCase):
         Git = mock.Mock()
         Git.mergeDefault.return_value = 0
         Git.mergeDefault.side_effect = lambda x, y: x == 'b1'
-        rc = self.mrg.merge(Git, 'repo', 'cvs-b1')
+        rc = self.mrg.merge('repo', Git, 'cvs-b1')
         Git.checkout.assert_has_calls([mock.call('b1'), mock.call('master')])
         Git.push.assert_called_once_with('origin', 'b1', 'b1') # not 'master'
         self.assertFalse(rc)
@@ -107,10 +107,10 @@ class GitMergeTest(testutils.TestCase):
     def test_mergeBranches(self):
         Git = mock.Mock()
         with mock.patch('gitcvs.gitmerge.Merger.mergeBranch') as mb:
-            self.mrg.mergeBranches(Git, 'repo2')
+            self.mrg.mergeBranches('repo2', Git)
             mb.assert_has_calls(
-                [mock.call(mock.ANY, 'repo2', 'cvs-b2'),
-                 mock.call(mock.ANY, 'repo2', 'cvs-b1')])
+                [mock.call('repo2', mock.ANY, 'cvs-b2'),
+                 mock.call('repo2', mock.ANY, 'cvs-b1')])
 
     def test_mergeBranchesError(self):
         Git = mock.Mock()
@@ -119,27 +119,27 @@ class GitMergeTest(testutils.TestCase):
 
         with mock.patch('gitcvs.gitmerge.Merger.mergeBranch') as mb:
             mb.side_effect = lambda x, y, z: raiseError()
-            self.assertRaises(RuntimeError, self.mrg.mergeBranches, Git, 'repo2')
-            mb.assert_called_once_with(mock.ANY, 'repo2', 'cvs-b2')
+            self.assertRaises(RuntimeError, self.mrg.mergeBranches, 'repo2', Git)
+            mb.assert_called_once_with('repo2', mock.ANY, 'cvs-b2')
 
     def test_mergeBranch(self):
         Git = mock.Mock()
         with mock.patch('gitcvs.gitmerge.Merger.mergeFrom') as mf:
-            self.mrg.mergeBranch(Git, 'repo', 'cvs-b1')
+            self.mrg.mergeBranch('repo', Git, 'cvs-b1')
             Git.initializeGitRepository.assert_called_once_with(create=False)
-            mf.assert_called_once_with(Git, 'repo', 'cvs-b1')
+            mf.assert_called_once_with('repo', Git, 'cvs-b1')
 
     def test_mergeFrom(self):
         Git = mock.Mock()
         with mock.patch('gitcvs.gitmerge.Merger.merge') as m:
-            self.mrg.mergeFrom(Git, 'repo2', 'cvs-b1')
+            self.mrg.mergeFrom('repo2', Git, 'cvs-b1')
             self.Git.pristine.assert_called_once_with()
-            m.assert_called_once_with(Git, 'repo2', 'cvs-b1')
+            m.assert_called_once_with('repo2', Git, 'cvs-b1')
 
     def test_mergeFrom(self):
         Git = mock.Mock()
         with mock.patch('gitcvs.gitmerge.Merger.merge') as m:
             m.return_value = False
-            self.assertRaises(RuntimeError, self.mrg.mergeFrom, Git, 'repo2', 'cvs-b1')
+            self.assertRaises(RuntimeError, self.mrg.mergeFrom, 'repo2', Git, 'cvs-b1')
             Git.pristine.assert_called_once_with()
-            m.assert_called_once_with(Git, 'repo2', 'cvs-b1')
+            m.assert_called_once_with('repo2', Git, 'cvs-b1')

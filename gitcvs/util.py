@@ -50,3 +50,12 @@ def removeRecursive(dir):
         for d in dirs:
             os.rmdir('/'.join((b, d)))
     os.removedirs(dir)
+
+def saveDir(fn):
+    def wrapper(self, *args, **kwargs):
+        oldDir = os.getcwd()
+        try:
+            fn(self, *args, **kwargs)
+        finally:
+            os.chdir(oldDir)
+    return wrapper

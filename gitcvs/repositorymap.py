@@ -66,7 +66,13 @@ class RepositoryConfig(config.Config):
         return self.getDefault(repository, 'cvsroot')
 
     def getGitRef(self, repository):
-        return ':'.join((self.getDefault(repository, 'gitroot'), repository))
+        gitroot = self.getDefault(repository, 'gitroot')
+        # this test needs to handle more cases
+        if gitroot.startswith('/') or '://' in gitroot:
+            # directory paths, http/s
+            return '/'.join((gitroot, repository))
+        # username@host:path
+        return ':'.join((gitroot, repository))
 
     def getCVSPath(self, repository):
         return self.get(repository, 'cvspath')

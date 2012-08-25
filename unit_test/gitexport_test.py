@@ -70,7 +70,7 @@ class GitExportTest(testutils.TestCase):
         with mock.patch('os.chdir') as cd:
             with mock.patch('os.path.exists') as exists:
                 exists.return_value = False
-                self.exp.cloneGit(self.Git, 'repo', '/gitdir/repo')
+                self.exp.cloneGit('repo', self.Git, '/gitdir/repo')
                 self.Git.clone.assert_called_once_with('git@host:repo')
                 cd.assert_has_calls([mock.call('/gitdir'),
                                      mock.call('/gitdir/repo')])
@@ -79,7 +79,7 @@ class GitExportTest(testutils.TestCase):
         with mock.patch('os.chdir') as cd:
             with mock.patch('os.path.exists') as exists:
                 exists.return_value = True
-                self.exp.cloneGit(self.Git, 'repo', '/gitdir/repo')
+                self.exp.cloneGit('repo', self.Git, '/gitdir/repo')
                 self.Git.clone.assert_not_called()
                 cd.assert_called_once_with('/gitdir/repo')
 
@@ -129,10 +129,10 @@ class GitExportTest(testutils.TestCase):
         with mock.patch('gitcvs.gitexport.Exporter.trackBranch') as tb:
             bi = ['b1', 'master']
             self.Git.branches.return_value = bi
-            bo = self.exp.prepareGitClone(self.Git, 'b1', 'repo')
+            bo = self.exp.prepareGitClone('repo', self.Git, 'b1')
             self.assertEqual(bi, bo)
             self.Git.pristine.assert_called_once_with()
-            tb.assert_called_once_with(self.Git, 'b1', bi, 'repo')
+            tb.assert_called_once_with('repo', self.Git, 'b1', bi)
             self.Git.checkout.assert_called_once_with('b1')
             self.Git.mergeFastForward.assert_called_once_with('origin/b1')
 
@@ -177,14 +177,13 @@ class GitExportTest(testutils.TestCase):
         self.assertEqual(AD, set())
 
     def test_trackBranch(self):
-        self.exp.trackBranch(self.Git, 'b1', set(('remotes/origin/b1',)),
-                             'repo')
+        self.exp.trackBranch('repo', self.Git, 'b1', set(('remotes/origin/b1',)))
         self.Git.trackBranch.assert_called_once_with('b1')
         self.Git.newBranch.assert_not_called()
 
     def test_trackBranchNoCreate(self):
         self.assertRaises(KeyError,
-            self.exp.trackBranch, self.Git, 'b1', set(()), 'repo')
+            self.exp.trackBranch, 'repo', self.Git, 'b1', set(()))
         self.Git.trackBranch.assert_not_called()
         self.Git.newBranch.assert_not_called()
 

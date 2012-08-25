@@ -163,7 +163,10 @@ Git operations are done and log files are stored.
 
 ### Application configuration ###
 
-A bigitr.conf file has three sections:
+A bigitr configuration file (by default, the file named by
+the `BIGITR_APP_CONFIG` environment variable, or `~/.bigitr`
+if it is not set, or provided via the `--appconfig` option)
+has three sections:
 
     # Comment
     [global]
@@ -238,10 +241,13 @@ configuration might be:
 
 ### Repository configuration ###
 
-A repository.conf file has one section per repository, plus an
-optional `GLOBAL` (all capitals, preserving `global` as a possible
-real repository name) section that is inherited by all the
-repository sections in that file.
+A bigitr repository configuration file (by default, the file
+named by the `BIGITR_REPO_CONFIG` environment variable, or
+`~/.bigitr-repository` if it is not set, or provided via the
+`--config` option) has one section per repository, plus an optional
+`GLOBAL` (all capitals, preserving `global` as a possible real
+repository name) section that is inherited by all the repository
+sections in that file.
 
 
     [GLOBAL]
@@ -372,6 +378,71 @@ are set up already authenticated.  You will have to run `cvs login`
 before running Bigitr if your configuration requires CVS login
 authentication.
 
+
+Running Bigitr
+--------------
+
+The `bigitr` program takes subcommands (like CVS and Git) and has
+a common argument structure.  It takes three options:
+
+*   `-h` or `--help`: Print a help summary
+
+*   `-a` or `--appconfig`: Specify an application configuration file
+    to use instead of the file named by the `BIGITR_APP_CONFIG`
+    environment variable or `~/.bigitr`.
+
+*   `-c` or `--config`": Specify a repository configuration file
+    to use instead of the file named by the `BIGITR_REPO_CONFIG`
+    environment variable or `~/.bigitr-repository`.
+
+After the options, the `bigitr` program takes subcommands, some of
+which may be followed by optional repository/branch specifiers.
+Repositories may be specified by basename or by complete path;
+that is, if a repository configuration file has a section named
+`[/path/to/GitRepository]`, then a repository might be specified on
+the command line as `/path/to/GitRepository` or as `GitRepository`.
+In order to specify a branch, use the `::` to separate the branch
+name from the repository name.  If you have a repository with `::`
+in the name of the repository, use an additional trailing `::`
+to specify all branches in that repository.
+
+*   `help`: Ignores all further arguments, acts just like `--help`
+
+*   `sync`: Runs all configured synchronization, including all
+    configured exports from Git branches to CVS branches, all
+    imports from CVS branches into Git branches, and all configured
+    Git merges from target Git branches.  If `export.preimport` is
+    true (the default), CVS imports and the resulting Git merges
+    will be done both before and after the Git exports to CVS.
+    If no repositories are specified, the synchronization is run
+    for all configured repositories; otherwise, it is run for the
+    specified repositories.
+
+    The `sync` command is the normal full operation command.
+
+    The `sync` command does not honor branch specifications,
+    because the branch specification would be ambiguous between
+    Git branches and CVS branches.  Branch specifications for
+    `sync` may be silently ignored.
+
+*   `import`: Runs all configured imports from CVS branches into
+    Git branches, and all subsequent merges, for all configured
+    or only for specified repositories.  Branch specifications
+    apply to CVS branches, not Git branches.
+
+*   `export`: Runs all configured exports from Git branches into
+    CVS branches, for all configured or only for specified
+    repositories.  Even if `export.preimport` is true (the
+    default), no pre-import is run.  Therefore, this will overwrite
+    content from CVS that has not been yet been imported into its
+    corresponding Git branch, if there have been CVS commits since
+    the last import operation.  Branch specification apply to Git
+    branches, not CVS branches.
+
+*   `merge`: Runs all configured merges for Git branches for all
+    repositories, or for specified repositories, or for specified
+    branches of specified repositories.  Even if branches are
+    specified, all configured cascading merges will be performed.
 
 
 Requirements

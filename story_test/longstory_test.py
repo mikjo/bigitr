@@ -20,9 +20,11 @@ import os
 import tempfile
 import unittest
 
+import gitcvs
 from gitcvs import cvsimport, gitexport, context, git, cvs, util
 
-class TestStory(unittest.TestCase):
+
+class WorkDir(unittest.TestCase):
     def setUp(self):
         self.oldcwd = os.getcwd()
         self.workdir = tempfile.mkdtemp(suffix='.gitcvs')
@@ -55,63 +57,67 @@ class TestStory(unittest.TestCase):
         self.gitco = self.workdir + '/gitco'
         os.makedirs(self.gitco)
 
-        if 'CVSROOT' in os.environ:
-            self.oldcvsroot = os.environ['CVSROOT']
-        else:
-            self.oldcvsroot = None
-        os.unsetenv('CVSROOT')
-        appConfig = StringIO('[global]\n'
-                             'logdir = %s\n'
-                             'gitdir = %s\n'
-                             'compresslogs = false\n'
-                             '[export]\n'
-                             'cvsdir = %s\n'
-                             '[import]\n'
-                             'cvsdir = %s\n'
-                             %(self.logdir,
-                               self.gitdir,
-                               self.cvsdir,
-                               self.expdir) # "cvs export" to import into git
-                            )
-        repConfig = StringIO('[GLOBAL]\n'
-                             'cvsroot = %s\n'
-                             'gitroot = %s/\n'
-                             '[git/module1]\n'
-                             'cvspath = module1\n'
-                             'cvs.b1 = b1\n'
-                             'cvs.b2 = b2\n'
-                             'git.master = b2\n'
-                             'git.b1 = b1\n'
-                             'prefix.b1 = SOME FIXED STRING\n'
-                             '[git/module2]\n'
-                             'cvspath = module2\n'
-                             'skeleton = %s/m2\n'
-                             'cvs.b1 = b1\n'
-                             'git.master = b1\n'
-                             '[git/module3]\n'
-                             'cvspath = module3\n'
-                             'cvs.b1 = b1\n'
-                             'git.master = b1\n'
-                             % (self.cvsroot,
-                                self.gitroot,
-                                self.skeldir)
-                             )
-        self.ctx = context.Context(appConfig, repConfig)
-        self.getGitRef = self.ctx.getGitRef
-        self.ctx.getGitRef = lambda(a): '/'.join((self.gitroot, a))
+        self.oldenviron = {}
+        self.unsetenv('CVSROOT')
 
-    @staticmethod
-    def removeRecursive(dir):
-        util.removeRecursive(dir)
-
+        self.appConfigText = ('[global]\n'
+                              'logdir = %s\n'
+                              'gitdir = %s\n'
+                              'compresslogs = false\n'
+                              '[export]\n'
+                              'cvsdir = %s\n'
+                              '[import]\n'
+                              'cvsdir = %s\n'
+                              %(self.logdir,
+                                self.gitdir,
+                                self.cvsdir,
+                                self.expdir) # "cvs export" to import into git
+                              )
+        self.repConfigText = ('[GLOBAL]\n'
+                              'cvsroot = %s\n'
+                              'gitroot = %s/\n'
+                              '[git/module1]\n'
+                              'cvspath = module1\n'
+                              'cvs.b1 = b1\n'
+                              'cvs.b2 = b2\n'
+                              'git.master = b2\n'
+                              'git.b1 = b1\n'
+                              'prefix.b1 = SOME FIXED STRING\n'
+                              '[git/module2]\n'
+                              'cvspath = module2\n'
+                              'skeleton = %s/m2\n'
+                              'cvs.b1 = b1\n'
+                              'git.master = b1\n'
+                              '[git/module3]\n'
+                              'cvspath = module3\n'
+                              'cvs.b1 = b1\n'
+                              'git.master = b1\n'
+                              % (self.cvsroot,
+                                 self.gitroot,
+                                 self.skeldir)
+                              )
     def tearDown(self):
         os.chdir(self.oldcwd)
-        self.removeRecursive(self.workdir)
-        if self.oldcvsroot:
-            os.environ['CVSROOT'] = self.oldcvsroot
+        util.removeRecursive(self.workdir)
+        for key, value in self.oldenviron.items():
+            if value:
+                os.environ[key] = value
+            else:
+                os.unsetenv(key)
+
+    def savevar(self, var):
+        if var in os.environ:
+            self.oldenviron[var] = os.environ[var]
         else:
-            os.unsetenv('CVSROOT')
-        self.ctx.getGitRef = self.getGitRef
+            self.oldenviron[var] = None
+
+    def unsetenv(self, var):
+        self.savevar(var)
+        os.unsetenv(var)
+
+    def setenv(self, var, value):
+        self.savevar(var)
+        os.environ[var] = value
 
     def unpack(self, tarball):
         os.system('tar -x -C %s -z -f %s/testdata/%s' %(
@@ -126,6 +132,20 @@ class TestStory(unittest.TestCase):
             # do not pack cvs because it references transient CVSROOT
             os.system('tar -c -C %s -z -f %s gitroot cvsroot'
                       %(self.workdir, tarball))
+
+    def assertNoTracebackLogs(self):
+        for b, dirs, files in os.walk(self.logdir, topdown=False):
+            for f in files:
+                if f.endswith('.err'):
+                    self.assertFalse('Traceback' in file('/'.join((b,f))).read())
+
+
+class TestStoryAPI(WorkDir):
+    def setUp(self):
+        WorkDir.setUp(self)
+        appConfig = StringIO(self.appConfigText)
+        repConfig = StringIO(self.repConfigText)
+        self.ctx = context.Context(appConfig, repConfig)
 
     def test_lowlevel1(self):
         'test initial import process'
@@ -892,3 +912,218 @@ class TestStory(unittest.TestCase):
         exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
         self.assertTrue('content' in
             file(self.cvsroot+'/module1/new/directory/tree/Attic/file,v').read())
+
+
+
+
+class TestStoryCommands(WorkDir):
+    def setUp(self):
+        WorkDir.setUp(self)
+        self.bindir = os.path.dirname(os.path.dirname(__file__)) + '/bin'
+        self.exe = self.bindir + '/bigitr'
+        self.cfgdir = self.workdir + '/cfg'
+        os.makedirs(self.cfgdir)
+        self.appCfgname = self.cfgdir + '/appcfg'
+        file(self.appCfgname, 'w').write(self.appConfigText)
+        self.setenv('BIGITR_APP_CONFIG', self.appCfgname)
+        self.repCfgname = self.cfgdir + '/repcfg'
+        file(self.repCfgname, 'w').write(self.repConfigText)
+        self.setenv('BIGITR_REPO_CONFIG', self.repCfgname)
+
+    def invoke(self, *args):
+        self.assertRaises(SystemExit, gitcvs.main, args)
+
+    def test_import(self):
+        'basic workflow from command invocation'
+        # starts with same changes as low-level API version
+        self.unpack('TESTROOT.1.tar.gz')
+        # the tool otherwise assumes that the remote repository exists
+        os.system('git init --bare %s/git/module1' %self.gitroot)
+        cwd1 = os.getcwd()
+        self.invoke('import', 'module1::b1')
+        cwd2 = os.getcwd()
+        self.assertEqual(cwd1, cwd2)
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/.gitignore'))
+
+        # now test with no changes in CVS
+        self.invoke('import', 'module1::b1')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/3'))
+
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/3', 'w').write('3\n')
+        os.system('cd %s/module1; cvs add 3; cvs commit -m "add 3"'
+                  %self.cvsco)
+
+        self.invoke('import', 'module1::b1')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertEqual(file(self.gitdir + '/module1/3').read(), '3\n')
+
+        # now test with no changes in CVS
+        self.invoke('import', 'module1::b1')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertEqual(file(self.gitdir + '/module1/3').read(), '3\n')
+
+        os.system('cd %s/module1; cvs tag -b b2' %self.cvsco)
+        file(self.cvsco + '/module1/4', 'w').write('4\n')
+        os.system('cd %s/module1; cvs add 4; cvs commit -r b2 -m "add 4";'
+                  'cvs up -r b2'
+                  %self.cvsco)
+
+        # make sure that the new CVS branch does not break the old one
+        self.invoke('import', 'module1::b1')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertEqual(file(self.gitdir + '/module1/3').read(), '3\n')
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/4'))
+
+        # new CVS branch requires separate CVS object that knows about it
+        self.invoke('import', 'module1::b2')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertEqual(file(self.gitdir + '/module1/3').read(), '3\n')
+        self.assertEqual(file(self.gitdir + '/module1/4').read(), '4\n')
+
+        # test importing the removal of a file
+        os.remove(self.cvsco + '/module1/3')
+        os.system('cd %s/module1; cvs remove 3;'
+                  ' cvs commit -m "removed 3 in b2"' %self.cvsco)
+        self.invoke('import', 'module1::b2')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertEqual(file(self.gitdir + '/module1/4').read(), '4\n')
+
+        # make sure that removal on new CVS branch does not break the old one
+        self.invoke('import', 'module1::b1')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertEqual(file(self.gitdir + '/module1/3').read(), '3\n')
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/4'))
+
+        # and change branch again
+        self.invoke('import', 'module1::b2')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/2'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/3'))
+        self.assertEqual(file(self.gitdir + '/module1/4').read(), '4\n')
+
+        # make sure that nothing conflicts with another module
+        # the tool otherwise assumes that the remote repository exists
+        os.system('git init --bare %s/git/module2' %self.gitroot)
+        self.invoke('import', 'git/module2::b1')
+        self.assertTrue(os.path.exists(self.gitdir + '/module2/1'))
+        # ensure that files get cleaned up
+        self.assertFalse(os.path.exists(self.gitdir + '/module2/bad.jar'))
+        self.assertEqual(file(self.gitdir + '/module2/.gitignore').read(),
+            '*.jar\n*.o\n.cvsignore\n')
+        # .cvsignore file was ignored
+        self.assertFalse(os.path.exists(self.gitdir + '/module2/.cvsignore'))
+
+        # make sure that a stray file is cleaned up where necessary
+        file('%s/module2/bad.jar' %self.gitdir, 'w')
+        self.invoke('import', 'module2::b1')
+        self.assertFalse(os.path.exists(self.gitdir + '/module2/bad.jar'))
+
+        # merge cvs-b1 onto master, including not having .cvsignore
+        os.system('cd %s/module2; '
+                  'git checkout master; '
+                  'git merge cvs-b1 -m "prepare for export"; '
+                  'git push origin master; '
+                  %self.gitdir)
+
+        # make sure that .cvsignore was not deleted from CVS when we export
+        self.invoke('export', 'module2::master')
+        self.assertTrue(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/.cvsignore'))
+        self.assertTrue(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/ignore/.cvsignore'))
+        # make sure that bad.jar WAS deleted from CVS when we exported
+        self.assertFalse(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/bad.jar'))
+        # make sure that .gitignore and .gitattributes were not copied to CVS
+        self.assertFalse(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/.gitignore'))
+        self.assertFalse(os.path.exists(
+            self.cvsdir + '/module2/b1/module2/.gitattributes'))
+
+        # .gitignore primed from .cvsignore if it exists and no skeleton
+        # the tool otherwise assumes that the remote repository exists
+        os.system('git init --bare %s/git/module3' %self.gitroot)
+        self.invoke('import', 'git/module3::b1')
+        os.system('cd %s/module3; '
+                  'git checkout master; '
+                  %self.gitdir)
+        self.assertEqual(file(self.gitdir + '/module3/.gitignore').read(),
+            'copy.to.gitignore\n')
+        self.assertNoTracebackLogs()
+
+    def test_other_commands(self):
+        self.unpack('TESTROOT.5.tar.gz')
+        # create missing branch
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1 && '
+                  'git checkout cvs-b2 &&'
+                  'git branch b2 && '
+                  'git push origin b2; '
+                  'git branch --set-upstream b2 origin/b2; '
+                  %self.gitco)
+
+        file(self.repCfgname, 'w').write(
+            '[GLOBAL]\n'
+            'cvsroot = %s\n'
+            'gitroot = %s/\n'
+            '[git/module1]\n'
+            'cvspath = module1\n'
+            'cvs.b1 = b1\n'
+            'cvs.b2 = b2\n'
+            'merge.cvs-b1 = b1 b2\n'
+            'merge.cvs-b2 = b2\n'
+            'merge.b2 = master\n'
+            'git.master = b2\n'
+            'git.b1 = b1\n'
+            'prefix.b1 = SOME FIXED STRING\n'
+            '[git/module3]\n'
+            'cvspath = module3\n'
+            'cvs.b1 = b1\n'
+            'git.master = b1\n'
+            % (self.cvsroot,
+               self.gitroot)
+            )
+        # and now the other commands
+        cwd1 = os.getcwd()
+        self.invoke('sync')
+        cwd2 = os.getcwd()
+        self.assertEqual(cwd1, cwd2)
+        self.assertNoTracebackLogs()
+
+        cwd1 = os.getcwd()
+        self.invoke('export')
+        cwd2 = os.getcwd()
+        self.assertEqual(cwd1, cwd2)
+        self.assertNoTracebackLogs()
+
+        cwd1 = os.getcwd()
+        self.invoke('merge')
+        cwd2 = os.getcwd()
+        self.assertEqual(cwd1, cwd2)
+        self.assertNoTracebackLogs()
+
+        cwd1 = os.getcwd()
+        self.invoke('help')
+        cwd2 = os.getcwd()
+        self.assertEqual(cwd1, cwd2)
+        self.assertNoTracebackLogs()

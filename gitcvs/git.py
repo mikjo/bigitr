@@ -155,7 +155,9 @@ class Git(object):
         repoDir = '/'.join((gitDir, repoName))
         skeleton = self.ctx.getSkeleton(self.repo)
 
-        if not os.path.exists(repoDir):
+        if os.path.exists(repoDir):
+            os.chdir(repoDir)
+        else:
             os.chdir(gitDir)
             self.clone(self.ctx.getGitRef(self.repo))
             os.chdir(repoDir)

@@ -15,29 +15,32 @@
 #
 
 from gitcvs import errhandler
+from gitcvs import util
 
 class Merger(object):
     def __init__(self, ctx):
         self.ctx = ctx
         self.err = errhandler.Errors(ctx)
 
-    def mergeBranches(self, Git, repository):
+    def mergeBranches(self, repository, Git, requestedBranch=None):
         onerror = self.ctx.getImportError()
         try:
             for gitbranch in self.ctx.getMergeBranchMaps(repository).keys():
-                self.mergeBranch(Git, repository, gitbranch)
+                if requestedBranch is None or gitbranch == requestedBranch:
+                    self.mergeBranch(repository, Git, gitbranch)
         except Exception as e:
             self.err(repository, onerror)
 
-    def mergeBranch(self, Git, repository, gitbranch):
+    @util.saveDir
+    def mergeBranch(self, repository, Git, gitbranch):
         Git.initializeGitRepository(create=False)
-        self.mergeFrom(Git, repository, gitbranch)
+        self.mergeFrom(repository, Git, gitbranch)
 
-    def mergeFrom(self, Git, repository, gitbranch):
+    def mergeFrom(self, repository, Git, gitbranch):
         success = True
         # try to merge downstream branches even if there was nothing to
         # commit, because a merge conflict might have been resolved
-        if not self.merge(Git, repository, gitbranch):
+        if not self.merge(repository, Git, gitbranch):
             success = False
 
         # Status can report clean with .gitignored files existing
@@ -48,7 +51,7 @@ class Merger(object):
             raise RuntimeError('merge failed for branch %s: see %s' %(
                 gitbranch, Git.log.thiserr))
 
-    def merge(self, Git, repository, gitbranch):
+    def merge(self, repository, Git, gitbranch):
         success = True
 
         Git.pristine()
@@ -64,7 +67,7 @@ class Merger(object):
             else:
                 Git.push('origin', target, target)
                 Git.runImpPostHooks(target)
-                rc = self.merge(Git, repository, target)
+                rc = self.merge(repository, Git, target)
                 if not rc:
                     success = False
 

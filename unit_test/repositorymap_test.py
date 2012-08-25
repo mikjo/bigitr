@@ -114,6 +114,16 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
         self.assertEqual(self.cfg.getGitRef('Path/To/Git/repo2'),
                          'git@host2:Path/To/Git/repo2')
 
+    def test_getGitRefHTTP(self):
+        self.cfg.set('Path/To/Git/repository', 'gitroot', 'http://foo.com')
+        self.assertEqual(self.cfg.getGitRef('Path/To/Git/repository'),
+                         'http://foo.com/Path/To/Git/repository')
+
+    def test_getGitRefPath(self):
+        self.cfg.set('Path/To/Git/repository', 'gitroot', '/foo')
+        self.assertEqual(self.cfg.getGitRef('Path/To/Git/repository'),
+                         '/foo/Path/To/Git/repository')
+
     def test_getCVSPath(self):
         self.assertEqual(self.cfg.getCVSPath('Path/To/Git/repository'),
                          'Path/To/CVS/directory')

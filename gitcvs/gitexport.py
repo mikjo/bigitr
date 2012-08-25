@@ -18,8 +18,9 @@ import os
 import time
 
 import errhandler
-import git
 import cvs
+import git
+import util
 
 class Exporter(object):
     def __init__(self, ctx):
@@ -31,16 +32,18 @@ class Exporter(object):
             Git = git.Git(self.ctx, repository)
             self.exportBranches(repository, Git)
 
-    def exportBranches(self, repository, Git):
+    def exportBranches(self, repository, Git, requestedBranch=None):
         onerror = self.ctx.getExportError()
         for gitbranch, cvsbranch, exportbranch in self.ctx.getExportBranchMaps(
                 repository):
-            CVS = cvs.CVS(self.ctx, repository, cvsbranch)
-            try:
-                self.exportgit(repository, Git, CVS, gitbranch, exportbranch)
-            except Exception as e:
-                self.err(repository, onerror)
+            if requestedBranch is None or gitbranch == requestedBranch:
+                CVS = cvs.CVS(self.ctx, repository, cvsbranch)
+                try:
+                    self.exportgit(repository, Git, CVS, gitbranch, exportbranch)
+                except Exception as e:
+                    self.err(repository, onerror)
 
+    @util.saveDir
     def exportgit(self, repository, Git, CVS, gitbranch, exportbranch):
         gitDir = self.ctx.getGitDir()
         repoName = self.ctx.getRepositoryName(repository)
@@ -48,9 +51,9 @@ class Exporter(object):
         originExportBranch = 'remotes/origin/'+exportbranch
         exportbranches = set((exportbranch, originExportBranch))
 
-        self.cloneGit(Git, repository, repoDir)
+        self.cloneGit(repository, Git, repoDir)
 
-        branches = self.prepareGitClone(Git, gitbranch, repository)
+        branches = self.prepareGitClone(repository, Git, gitbranch)
         if (branches - exportbranches) == branches:
             GitMessages = 'Initial export to CVS from git branch %s' %gitbranch
         else:
@@ -108,7 +111,7 @@ class Exporter(object):
         CVS.runPostHooks()
         Git.runExpPostHooks(gitbranch)
 
-    def cloneGit(self, Git, repository, repoDir):
+    def cloneGit(self, repository, Git, repoDir):
         if not os.path.exists(repoDir):
             os.chdir(self.ctx.getGitDir())
             Git.clone(self.ctx.getGitRef(repository))
@@ -127,14 +130,14 @@ class Exporter(object):
                                    %(CVS.branch, CVS.location))
 
 
-    def prepareGitClone(self, Git, gitbranch, repository):
+    def prepareGitClone(self, repository, Git, gitbranch):
         Git.fetch()
         # clean up after any garbage left over from previous runs so
         # that we do not copy files not managed, at least on this branch,
         # into CVS
         Git.pristine()
         branches = Git.branches()
-        self.trackBranch(Git, gitbranch, branches, repository)
+        self.trackBranch(repository, Git, gitbranch, branches)
         Git.checkout(gitbranch)
         Git.mergeFastForward('origin/' + gitbranch)
         return branches
@@ -156,7 +159,7 @@ class Exporter(object):
         return GitFileSet, DeletedFiles, AddedFiles, CommonFiles, AddedDirs
 
     @staticmethod
-    def trackBranch(Git, branch, branches, repository):
+    def trackBranch(repository, Git, branch, branches):
         if branch not in branches:
             if 'remotes/origin/' + branch in branches:
                 Git.trackBranch(branch)

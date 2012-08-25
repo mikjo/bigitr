@@ -33,15 +33,17 @@ class Importer(object):
             Git = git.Git(self.ctx, repository)
             self.importBranches(repository, Git)
 
-    def importBranches(self, repository, Git):
+    def importBranches(self, repository, Git, requestedBranch=None):
         onerror = self.ctx.getImportError()
         for cvsbranch, gitbranch in self.ctx.getImportBranchMaps(repository):
-            CVS = cvs.CVS(self.ctx, repository, cvsbranch)
-            try:
-                self.importcvs(repository, Git, CVS, cvsbranch, gitbranch)
-            except Exception as e:
-                self.err(repository, onerror)
+            if requestedBranch is None or cvsbranch == requestedBranch:
+                CVS = cvs.CVS(self.ctx, repository, cvsbranch)
+                try:
+                    self.importcvs(repository, Git, CVS, cvsbranch, gitbranch)
+                except Exception as e:
+                    self.err(repository, onerror)
 
+    @util.saveDir
     def importcvs(self, repository, Git, CVS, cvsbranch, gitbranch):
         gitDir = self.ctx.getGitDir()
         repoName = self.ctx.getRepositoryName(repository)
@@ -117,4 +119,4 @@ class Importer(object):
             Git.runImpPostHooks(gitbranch)
 
         merger = gitmerge.Merger(self.ctx)
-        merger.mergeFrom(Git, repository, gitbranch)
+        merger.mergeFrom(repository, Git, gitbranch)
