@@ -56,6 +56,13 @@ class TestRunner(testutils.TestCase):
             self.assertEqual(r.repos, ['repo1', 'repo2'])
             self.assertEqual(r.ctx, C('/hm/.bigitr', '/foo/repoconf'))
 
+    def test_getContext(self):
+        with mock.patch('gitcvs.context.Context') as C:
+            with mock.patch('gitcvs._Runner.fileName') as F:
+                args = mock.Mock(repository=[[]])
+                r = gitcvs._Runner(args)
+                C.assert_called_once_with(F(), F())
+
     def test_getBranchMapsWithDefault(self):
         with mock.patch('gitcvs._Runner.getContext') as C:
             args = mock.Mock(repository=[[]])
