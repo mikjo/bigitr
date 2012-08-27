@@ -17,10 +17,10 @@
 import os
 import time
 
-import errhandler
-import cvs
-import git
-import util
+from bigitr import errhandler
+from bigitr import cvs
+from bigitr import git
+from bigitr import util
 
 class Exporter(object):
     def __init__(self, ctx):

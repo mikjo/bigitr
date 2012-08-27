@@ -17,11 +17,11 @@
 import os
 import time
 
-import cvs
-import errhandler
-import git
-import gitmerge
-import util
+from bigitr import cvs
+from bigitr import errhandler
+from bigitr import git
+from bigitr import gitmerge
+from bigitr import util
 
 class Importer(object):
     def __init__(self, ctx):

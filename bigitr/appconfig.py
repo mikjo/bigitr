@@ -17,7 +17,7 @@
 # Read configuration files for cvs/git synchronization
 #
 
-import config
+from bigitr import config
 
 ABORT = 0
 WARN = 1

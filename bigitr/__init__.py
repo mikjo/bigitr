@@ -18,12 +18,12 @@ import argparse
 import os
 import sys
 
-import context
-import cvsimport
-import git
-import gitexport
-import gitmerge
-import sync
+from bigitr import context
+from bigitr import cvsimport
+from bigitr import git
+from bigitr import gitexport
+from bigitr import gitmerge
+from bigitr import sync
 
 class _Runner(object):
     def __init__(self, args):

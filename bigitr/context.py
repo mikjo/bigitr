@@ -18,10 +18,10 @@
 
 import os
 
-import appconfig
-import repositorymap
-import log
-import mail
+from bigitr import appconfig
+from bigitr import repositorymap
+from bigitr import log
+from bigitr import mail
 
 class Context(object):
     def __init__(self, appConfig, repoConfig):

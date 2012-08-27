@@ -17,7 +17,7 @@
 import os
 import shell
 
-import util
+from bigitr import util
 
 class Git(object):
     def __init__(self, ctx, repo):

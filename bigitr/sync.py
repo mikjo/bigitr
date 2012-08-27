@@ -18,10 +18,10 @@
 
 import os
 
-import cvsimport
-import errhandler
-import gitexport
-import git
+from bigitr import cvsimport
+from bigitr import errhandler
+from bigitr import gitexport
+from bigitr import git
 
 class Synchronizer(object):
     def __init__(self, ctx):

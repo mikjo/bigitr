@@ -17,8 +17,8 @@
 import sys
 import traceback
 
-import appconfig
-import log
+from bigitr import appconfig
+from bigitr import log
 
 class Errors(object):
     def __init__(self, ctx):
