@@ -17,7 +17,7 @@
 from cStringIO import StringIO
 import testutils
 
-from gitcvs import context, log
+from bigitr import context, log
 
 class TestLoggingShell(testutils.TestCase):
     def setUp(self):

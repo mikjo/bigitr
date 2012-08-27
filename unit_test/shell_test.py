@@ -22,11 +22,11 @@ from cStringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import shell, log, context
+from bigitr import shell, log, context
 
 class TestLoggingShell(testutils.TestCase):
     def setUp(self):
-        self.logdir = tempfile.mkdtemp(suffix='.gitcvs')
+        self.logdir = tempfile.mkdtemp(suffix='.bigitr')
         appConfig = StringIO('''
 [global]
 logdir = %s

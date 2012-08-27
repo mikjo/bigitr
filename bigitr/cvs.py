@@ -18,7 +18,7 @@ import os
 import shell
 import tempfile
 
-from gitcvs import util
+from bigitr import util
 
 # One CVS checkout per branch, because CVS switches branches slowly/poorly,
 # so there is one CVS object per branch, not per repository.
@@ -126,7 +126,7 @@ class CVS(object):
 
     @inCVSPATH
     def commit(self, message):
-        fd, name = tempfile.mkstemp('.gitcvs')
+        fd, name = tempfile.mkstemp('.bigitr')
         os.write(fd, message)
         # flat list: ['-s', 'A=a', '-s', 'B=b']
         cvsvars = sum([['-s', x]

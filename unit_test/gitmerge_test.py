@@ -20,12 +20,12 @@ from StringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import gitmerge, context
+from bigitr import gitmerge, context
 
 class GitMergeTest(testutils.TestCase):
     def setUp(self):
-        with mock.patch('gitcvs.log.Log') as mocklog:
-            with mock.patch('gitcvs.log.LogCache') as mocklogcache:
+        with mock.patch('bigitr.log.Log') as mocklog:
+            with mock.patch('bigitr.log.LogCache') as mocklogcache:
                 appConfig = StringIO('[global]\n'
                                      'logdir = /logdir\n'
                                      'gitdir = /gitdir\n'
@@ -106,7 +106,7 @@ class GitMergeTest(testutils.TestCase):
 
     def test_mergeBranches(self):
         Git = mock.Mock()
-        with mock.patch('gitcvs.gitmerge.Merger.mergeBranch') as mb:
+        with mock.patch('bigitr.gitmerge.Merger.mergeBranch') as mb:
             self.mrg.mergeBranches('repo2', Git)
             mb.assert_has_calls(
                 [mock.call('repo2', mock.ANY, 'cvs-b2'),
@@ -117,28 +117,28 @@ class GitMergeTest(testutils.TestCase):
         def raiseError():
             raise RuntimeError
 
-        with mock.patch('gitcvs.gitmerge.Merger.mergeBranch') as mb:
+        with mock.patch('bigitr.gitmerge.Merger.mergeBranch') as mb:
             mb.side_effect = lambda x, y, z: raiseError()
             self.assertRaises(RuntimeError, self.mrg.mergeBranches, 'repo2', Git)
             mb.assert_called_once_with('repo2', mock.ANY, 'cvs-b2')
 
     def test_mergeBranch(self):
         Git = mock.Mock()
-        with mock.patch('gitcvs.gitmerge.Merger.mergeFrom') as mf:
+        with mock.patch('bigitr.gitmerge.Merger.mergeFrom') as mf:
             self.mrg.mergeBranch('repo', Git, 'cvs-b1')
             Git.initializeGitRepository.assert_called_once_with(create=False)
             mf.assert_called_once_with('repo', Git, 'cvs-b1')
 
     def test_mergeFrom(self):
         Git = mock.Mock()
-        with mock.patch('gitcvs.gitmerge.Merger.merge') as m:
+        with mock.patch('bigitr.gitmerge.Merger.merge') as m:
             self.mrg.mergeFrom('repo2', Git, 'cvs-b1')
             self.Git.pristine.assert_called_once_with()
             m.assert_called_once_with('repo2', Git, 'cvs-b1')
 
     def test_mergeFrom(self):
         Git = mock.Mock()
-        with mock.patch('gitcvs.gitmerge.Merger.merge') as m:
+        with mock.patch('bigitr.gitmerge.Merger.merge') as m:
             m.return_value = False
             self.assertRaises(RuntimeError, self.mrg.mergeFrom, 'repo2', Git, 'cvs-b1')
             Git.pristine.assert_called_once_with()

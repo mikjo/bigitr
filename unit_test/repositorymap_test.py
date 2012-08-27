@@ -20,12 +20,12 @@ from cStringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import repositorymap
+from bigitr import repositorymap
 
 class TestRepositoryConfig(testutils.TestCase):
     def setUp(self):
         os.environ['TESTCVSUSER'] = 'usr'
-        self.fd, self.cf = tempfile.mkstemp(suffix='.gitcvs')
+        self.fd, self.cf = tempfile.mkstemp(suffix='.bigitr')
         file(self.cf, 'r+').write('''
 [GLOBAL]
 gitroot = git@host2
@@ -61,7 +61,7 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
 ''')
         self.cfg = repositorymap.RepositoryConfig(self.cf)
 
-        otherfd, self.bad = tempfile.mkstemp(suffix='.gitcvs')
+        otherfd, self.bad = tempfile.mkstemp(suffix='.bigitr')
         os.close(otherfd)
         file(self.bad, 'r+').write('''
 [Path/To/Git/repository]

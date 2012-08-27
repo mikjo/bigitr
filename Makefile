@@ -18,13 +18,13 @@ all:
 	true
 
 clean:
-	find gitcvs *_test -name \*.pyc | xargs --no-run-if-empty rm
+	find bigitr *_test -name \*.pyc | xargs --no-run-if-empty rm
 	rm -f .coverage
 
 # override for automated test runs that should not drop into
 # the debugger when the code has an error
 PDB=--pdb -s
-COV=--with-coverage --cover-package gitcvs
+COV=--with-coverage --cover-package bigitr
 
 unit:
 	PYTHONPATH=. nosetests $(PDB) $(COV) unit_test/

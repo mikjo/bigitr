@@ -14,8 +14,8 @@
 #  limitations under the License.
 #
 
-from gitcvs import errhandler
-from gitcvs import util
+from bigitr import errhandler
+from bigitr import util
 
 class Merger(object):
     def __init__(self, ctx):

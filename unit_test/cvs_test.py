@@ -20,12 +20,12 @@ import os
 import tempfile
 import testutils
 
-from gitcvs import cvs, shell, context, util
+from bigitr import cvs, shell, context, util
 
 class TestCVS(testutils.TestCase):
     def setUp(self):
-        self.dir = tempfile.mkdtemp(suffix='.gitcvs')
-        self.cdir = tempfile.mkdtemp(suffix='.gitcvs')
+        self.dir = tempfile.mkdtemp(suffix='.bigitr')
+        self.cdir = tempfile.mkdtemp(suffix='.bigitr')
         self.fdir = '%s/repo/brnch/Loc' %self.cdir
         os.makedirs(self.fdir)
         if 'CVSROOT' in os.environ:
@@ -33,7 +33,7 @@ class TestCVS(testutils.TestCase):
         else:
             self.cvsroot = None
         os.unsetenv('CVSROOT')
-        with mock.patch('gitcvs.log.Log') as mocklog:
+        with mock.patch('bigitr.log.Log') as mocklog:
             appConfig = StringIO('[global]\n'
                                  'logdir = /logs\n'
                                  'gitdir = %s\n'
@@ -77,7 +77,7 @@ class TestCVS(testutils.TestCase):
         self.assertEqual(files, ['includeme', 'dir/metoo'])
 
     def test_export(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.cvs.export('targetdir')
             shell.run.assert_called_once_with(mock.ANY,
                 'cvs', 'export', '-kk', '-d', 'targetdir', '-r', 'brnch', 'Some/Loc')
@@ -85,13 +85,13 @@ class TestCVS(testutils.TestCase):
                 self.ctx.getCVSRoot('repo'))
 
     def test_disableLogKeyword(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.cvs.disableLogKeyword(['a'])
             shell.run.assert_called_once_with(mock.ANY,
                 'sed', '-i', '-r', mock.ANY, 'a')
 
     def test_checkout(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,
                                            chdir=mock.DEFAULT):
                 self.cvs.checkout()
@@ -102,7 +102,7 @@ class TestCVS(testutils.TestCase):
                     self.ctx.getCVSRoot('repo'))
 
     def test_infoDiff(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,
                                            chdir=mock.DEFAULT):
                 self.cvs.infoDiff()
@@ -114,7 +114,7 @@ class TestCVS(testutils.TestCase):
                 os.chdir.assert_any_call('%s/repo/brnch/Loc' %self.cdir)
 
     def test_update(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,
                                            chdir=mock.DEFAULT):
                 self.cvs.update()
@@ -126,7 +126,7 @@ class TestCVS(testutils.TestCase):
                 os.chdir.assert_any_call('%s/repo/brnch/Loc' %self.cdir)
 
     def test_deleteFiles(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,
                                            chdir=mock.DEFAULT,
                                            remove=mock.DEFAULT):
@@ -145,7 +145,7 @@ class TestCVS(testutils.TestCase):
                 ])
 
     def test_deleteFilesEmpty(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,
                                            chdir=mock.DEFAULT,
                                            remove=mock.DEFAULT):
@@ -154,7 +154,7 @@ class TestCVS(testutils.TestCase):
                 self.assertFalse(os.remove.called)
 
     def test_copyFiles(self):
-        with mock.patch('gitcvs.util.copyFiles'):
+        with mock.patch('bigitr.util.copyFiles'):
             fileList = ['/a', '/b', '/dir/metoo']
             self.cvs.copyFiles(self.dir, fileList)
             util.copyFiles.assertCalled(self.dir, self.cvs.path, fileList)
@@ -165,7 +165,7 @@ class TestCVS(testutils.TestCase):
             self.assertFalse(os.path.exists.called)
 
     def test_addDirectories(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch('os.path.exists'):
                 # if CVS directories exist
                 os.path.exists.return_value = True
@@ -192,18 +192,18 @@ class TestCVS(testutils.TestCase):
                 ])
 
     def test_addFiles(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.cvs.addFiles(['/a', '/b', '/dir/metoo'])
             shell.run.assert_called_once_with(mock.ANY,
                 'cvs', 'add', '-kk', '/a', '/b', '/dir/metoo')
 
     def test_addFilesEmpty(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.cvs.addFiles([])
             self.assertFalse(shell.run.called)
 
     def test_commit(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', remove=mock.DEFAULT,
                                            close=mock.DEFAULT,
                                            write=mock.DEFAULT) as mockos:
@@ -211,14 +211,14 @@ class TestCVS(testutils.TestCase):
                     mockmkstemp.return_value = (123456789, '/notThere')
                     self.cvs.commit('commitMessage')
                     mockos['write'].assert_called_once_with(123456789, 'commitMessage')
-                    mockmkstemp.assert_called_once_with('.gitcvs')
+                    mockmkstemp.assert_called_once_with('.bigitr')
                     shell.run.assert_called_once_with(mock.ANY,
                         'cvs', 'commit', '-r', 'brnch', '-R', '-F', '/notThere')
                     mockos['remove'].assert_called_once_with('/notThere')
                     mockos['close'].assert_called_once_with(123456789)
 
     def test_commitWithCVSVariables(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', remove=mock.DEFAULT,
                                            close=mock.DEFAULT,
                                            write=mock.DEFAULT) as mockos:
@@ -229,7 +229,7 @@ class TestCVS(testutils.TestCase):
                     self.ctx._rm.set('repo', 'cvsvar.V2', 'val2')
                     self.cvs.commit('commitMessage')
                     mockos['write'].assert_called_once_with(12345678, 'commitMessage')
-                    mockmkstemp.assert_called_once_with('.gitcvs')
+                    mockmkstemp.assert_called_once_with('.bigitr')
                     shell.run.assert_called_once_with(mock.ANY, 'cvs',
                         '-s', 'V1=val1', '-s', 'V2=val2',
                         'commit', '-r', 'brnch', '-R', '-F', '/notThere')
@@ -237,7 +237,7 @@ class TestCVS(testutils.TestCase):
                     mockos['close'].assert_called_once_with(12345678)
 
     def test_runPreHooks(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.cvs.runPreHooks()
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'precommand', 'arg'),
@@ -245,7 +245,7 @@ class TestCVS(testutils.TestCase):
             ])
 
     def test_runPostHooks(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.cvs.runPostHooks()
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'postcommand', 'arg'),

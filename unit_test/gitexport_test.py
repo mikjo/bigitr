@@ -20,12 +20,12 @@ from StringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import gitexport, context
+from bigitr import gitexport, context
 
 class GitExportTest(testutils.TestCase):
     def setUp(self):
-        with mock.patch('gitcvs.log.Log') as mocklog:
-            with mock.patch('gitcvs.log.LogCache') as mocklogcache:
+        with mock.patch('bigitr.log.Log') as mocklog:
+            with mock.patch('bigitr.log.LogCache') as mocklogcache:
                 appConfig = StringIO('[global]\n'
                                      'logdir = /logdir\n'
                                      'gitdir = /gitdir\n'
@@ -126,7 +126,7 @@ class GitExportTest(testutils.TestCase):
                 self.CVS.checkout.assert_not_called()
 
     def test_prepareGitClone(self):
-        with mock.patch('gitcvs.gitexport.Exporter.trackBranch') as tb:
+        with mock.patch('bigitr.gitexport.Exporter.trackBranch') as tb:
             bi = ['b1', 'master']
             self.Git.branches.return_value = bi
             bo = self.exp.prepareGitClone('repo', self.Git, 'b1')

@@ -20,12 +20,12 @@ from StringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import sync, context, git
+from bigitr import sync, context, git
 
 class TestSync(testutils.TestCase):
     def setUp(self):
-        with mock.patch('gitcvs.log.Log') as mocklog:
-            with mock.patch('gitcvs.log.LogCache') as mocklogcache:
+        with mock.patch('bigitr.log.Log') as mocklog:
+            with mock.patch('bigitr.log.LogCache') as mocklogcache:
                 appConfig = StringIO('[global]\n'
                                      'logdir = /logdir\n'
                                      'gitdir = /gitdir\n'

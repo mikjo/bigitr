@@ -20,14 +20,14 @@ import os
 import tempfile
 import unittest
 
-import gitcvs
-from gitcvs import cvsimport, gitexport, context, git, cvs, util
+import bigitr
+from bigitr import cvsimport, gitexport, context, git, cvs, util
 
 
 class WorkDir(unittest.TestCase):
     def setUp(self):
         self.oldcwd = os.getcwd()
-        self.workdir = tempfile.mkdtemp(suffix='.gitcvs')
+        self.workdir = tempfile.mkdtemp(suffix='.bigitr')
         # make sure that bad tests don't cause git commits in
         # the source repository!
         os.chdir(self.workdir)
@@ -931,7 +931,7 @@ class TestStoryCommands(WorkDir):
         self.setenv('BIGITR_REPO_CONFIG', self.repCfgname)
 
     def invoke(self, *args):
-        self.assertRaises(SystemExit, gitcvs.main, args)
+        self.assertRaises(SystemExit, bigitr.main, args)
 
     def test_import(self):
         'basic workflow from command invocation'

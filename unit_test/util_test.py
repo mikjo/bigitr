@@ -19,11 +19,11 @@ import os
 import tempfile
 import testutils
 
-from gitcvs import util
+from bigitr import util
 
 class TestUtil(testutils.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp(suffix='.gitcvs')
+        self.d = tempfile.mkdtemp(suffix='.bigitr')
         self.s = self.d + '/s'
         self.t = self.d + '/t'
         os.mkdir(self.s)

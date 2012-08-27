@@ -25,7 +25,7 @@ import tempfile
 
 import testutils
 
-from gitcvs import mail, context
+from bigitr import mail, context
 
 class FakeSMTPServer(smtpd.SMTPServer):
     def process_message(self, peer, mailfrom, rcpttos, data):
@@ -33,7 +33,7 @@ class FakeSMTPServer(smtpd.SMTPServer):
 
 class TestMail(testutils.TestCase):
     def setUp(self):
-        self.logdir = tempfile.mkdtemp(suffix='.gitcvs')
+        self.logdir = tempfile.mkdtemp(suffix='.bigitr')
         self.pid = None
         appConfig = StringIO('''
 [global]
@@ -62,7 +62,7 @@ email = re@cip1 re@cip2
     def test_noRecipient(self):
         m = self.ctx.mails['repo2']
         self.assertEqual(m.ignore, True)
-        with mock.patch('gitcvs.mail.Email.addAttachment'):
+        with mock.patch('bigitr.mail.Email.addAttachment'):
             m.addOutput('foo', 'out', 'err')
             m.addAttachment.assert_not_called()
 
@@ -70,7 +70,7 @@ email = re@cip1 re@cip2
         self.ctx._ac.remove_option('global', 'mailfrom')
         m = self.ctx.mails['repo1']
         self.assertEqual(m.ignore, True)
-        with mock.patch('gitcvs.mail.Email.addAttachment'):
+        with mock.patch('bigitr.mail.Email.addAttachment'):
             m.addOutput('foo', 'out', 'err')
             m.addAttachment.assert_not_called()
 
@@ -94,7 +94,7 @@ email = re@cip1 re@cip2
         self.assertFalse('filename="all_errors.txt"' in s)
         self.assertFalse('filename="all_output.txt"' in s)
 
-        with mock.patch('gitcvs.mail.Email._send'):
+        with mock.patch('bigitr.mail.Email._send'):
             m.send('all\noutput', 'all\nerrors')
             self.assertEqual(len(m.msg.get_payload()), 5)
             s = m.msg.as_string()

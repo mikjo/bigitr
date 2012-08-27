@@ -20,13 +20,13 @@ from cStringIO import StringIO
 
 import testutils
 
-import gitcvs
-from gitcvs import context
-from gitcvs import cvsimport
-from gitcvs import git
-from gitcvs import gitexport
-from gitcvs import gitmerge
-from gitcvs import sync
+import bigitr
+from bigitr import context
+from bigitr import cvsimport
+from bigitr import git
+from bigitr import gitexport
+from bigitr import gitmerge
+from bigitr import sync
 
 class TestRunner(testutils.TestCase):
     def setUp(self):
@@ -46,27 +46,27 @@ class TestRunner(testutils.TestCase):
             os.environ['HOME'] = self.home
 
     def test_runner(self):
-        with mock.patch('gitcvs.context.Context') as C:
+        with mock.patch('bigitr.context.Context') as C:
             args = mock.Mock(appconfig='~/.bigitr',
                              config='${FOO}/repoconf',
                              repository=[['repo1', 'repo2']])
-            r = gitcvs._Runner(args)
+            r = bigitr._Runner(args)
             C.assert_called_once_with('/hm/.bigitr', '/foo/repoconf')
             self.assertEqual(args, r.args)
             self.assertEqual(r.repos, ['repo1', 'repo2'])
             self.assertEqual(r.ctx, C('/hm/.bigitr', '/foo/repoconf'))
 
     def test_getContext(self):
-        with mock.patch('gitcvs.context.Context') as C:
-            with mock.patch('gitcvs._Runner.fileName') as F:
+        with mock.patch('bigitr.context.Context') as C:
+            with mock.patch('bigitr._Runner.fileName') as F:
                 args = mock.Mock(repository=[[]])
-                r = gitcvs._Runner(args)
+                r = bigitr._Runner(args)
                 C.assert_called_once_with(F(), F())
 
     def test_getBranchMapsWithDefault(self):
-        with mock.patch('gitcvs._Runner.getContext') as C:
+        with mock.patch('bigitr._Runner.getContext') as C:
             args = mock.Mock(repository=[[]])
-            r = gitcvs._Runner(args)
+            r = bigitr._Runner(args)
             r.ctx.getRepositories.return_value = ['foo']
             r.ctx.getRepositoryByName.side_effect = lambda x: x
             l = r.getBranchMaps()
@@ -75,27 +75,27 @@ class TestRunner(testutils.TestCase):
             self.assertEqual(args, r.args)
 
     def test_getBranchMapsWithName(self):
-        with mock.patch('gitcvs._Runner.getContext') as C:
+        with mock.patch('bigitr._Runner.getContext') as C:
             args = mock.Mock(repository=[['foo']])
-            r = gitcvs._Runner(args)
+            r = bigitr._Runner(args)
             r.ctx.getRepositoryByName.return_value = '/foo'
             l = r.getBranchMaps()
             self.assertEqual(l, [['/foo', None]])
             r.ctx.getRepositoryByName.assert_called_once_with('foo')
 
     def test_getBranchMapsWithBadName(self):
-        with mock.patch('gitcvs._Runner.getContext') as C:
+        with mock.patch('bigitr._Runner.getContext') as C:
             args = mock.Mock(repository=[['dne']])
-            r = gitcvs._Runner(args)
+            r = bigitr._Runner(args)
             r.ctx.getRepositoryByName.side_effect = lambda x: {}[x]
             self.assertRaises(KeyError, r.getBranchMaps)
             r.ctx.getRepositoryByName.assert_called_once_with('dne')
 
 
     def test_getBranchMapsWithBranches(self):
-        with mock.patch('gitcvs._Runner.getContext') as C:
+        with mock.patch('bigitr._Runner.getContext') as C:
             args = mock.Mock(repository=[['repo::b1', 'repo2::b2', 'repo::3::']])
-            r = gitcvs._Runner(args)
+            r = bigitr._Runner(args)
             r.ctx.getRepositoryByName.side_effect = lambda x: x
             l = r.getBranchMaps()
             self.assertEqual(l, [['repo', 'b1'], ['repo2', 'b2'], ['repo::3', '']])
@@ -106,18 +106,18 @@ class TestRunner(testutils.TestCase):
                 mock.call('repo::3')])
 
     def test_unimplementedRun(self):
-        with mock.patch('gitcvs._Runner.__init__') as I:
+        with mock.patch('bigitr._Runner.__init__') as I:
             I.return_value = None
-            r = gitcvs._Runner(mock.Mock())
+            r = bigitr._Runner(mock.Mock())
             self.assertRaises(NotImplementedError, r.run)
 
     def test_process(self):
-        with mock.patch('gitcvs.git.Git') as G:
-            with mock.patch('gitcvs._Runner.__init__') as I:
+        with mock.patch('bigitr.git.Git') as G:
+            with mock.patch('bigitr._Runner.__init__') as I:
                 I.return_value = None
-                with mock.patch('gitcvs._Runner.getBranchMaps') as R:
+                with mock.patch('bigitr._Runner.getBranchMaps') as R:
                     R.return_value = [['repo', None]]
-                    r = gitcvs._Runner(mock.Mock())
+                    r = bigitr._Runner(mock.Mock())
                     r.ctx = mock.Mock()
                     c = mock.Mock()
                     f = mock.Mock()
@@ -131,9 +131,9 @@ class TestRunner(testutils.TestCase):
                     c.err.report.assert_called_once_with('repo')
 
     def test_close(self):
-        with mock.patch('gitcvs._Runner.getContext') as C:
+        with mock.patch('bigitr._Runner.getContext') as C:
             args = mock.Mock(repository=[[]])
-            r = gitcvs._Runner(args)
+            r = bigitr._Runner(args)
             l = mock.Mock()
             r.ctx.logs.values.return_value = [l]
             r.close()
@@ -141,10 +141,10 @@ class TestRunner(testutils.TestCase):
 
 class TestSynchronize(testutils.TestCase):
     def test_run(self):
-        with mock.patch('gitcvs._Runner.__init__') as R:
+        with mock.patch('bigitr._Runner.__init__') as R:
             R.return_value = None
-            with mock.patch('gitcvs.sync.Synchronizer') as S:
-                s = gitcvs.Synchronize(mock.Mock())
+            with mock.patch('bigitr.sync.Synchronizer') as S:
+                s = bigitr.Synchronize(mock.Mock())
                 s.ctx = mock.Mock()
                 s.process = mock.Mock()
                 s.close = mock.Mock()
@@ -155,10 +155,10 @@ class TestSynchronize(testutils.TestCase):
 
 class TestImport(testutils.TestCase):
     def test_run(self):
-        with mock.patch('gitcvs._Runner.__init__') as R:
+        with mock.patch('bigitr._Runner.__init__') as R:
             R.return_value = None
-            with mock.patch('gitcvs.cvsimport.Importer') as I:
-                i = gitcvs.Import(mock.Mock())
+            with mock.patch('bigitr.cvsimport.Importer') as I:
+                i = bigitr.Import(mock.Mock())
                 i.ctx = mock.Mock()
                 i.process = mock.Mock()
                 i.close = mock.Mock()
@@ -170,10 +170,10 @@ class TestImport(testutils.TestCase):
 
 class TestExport(testutils.TestCase):
     def test_run(self):
-        with mock.patch('gitcvs._Runner.__init__') as R:
+        with mock.patch('bigitr._Runner.__init__') as R:
             R.return_value = None
-            with mock.patch('gitcvs.gitexport.Exporter') as E:
-                e = gitcvs.Export(mock.Mock())
+            with mock.patch('bigitr.gitexport.Exporter') as E:
+                e = bigitr.Export(mock.Mock())
                 e.ctx = mock.Mock()
                 e.process = mock.Mock()
                 e.close = mock.Mock()
@@ -185,10 +185,10 @@ class TestExport(testutils.TestCase):
 
 class TestMerge(testutils.TestCase):
     def test_run(self):
-        with mock.patch('gitcvs._Runner.__init__') as R:
+        with mock.patch('bigitr._Runner.__init__') as R:
             R.return_value = None
-            with mock.patch('gitcvs.gitmerge.Merger') as M:
-                m = gitcvs.Merge(mock.Mock())
+            with mock.patch('bigitr.gitmerge.Merger') as M:
+                m = bigitr.Merge(mock.Mock())
                 m.ctx = mock.Mock()
                 m.process = mock.Mock()
                 m.close = mock.Mock()
@@ -200,60 +200,60 @@ class TestMerge(testutils.TestCase):
 
 class TestMain(testutils.TestCase):
     def test_help(self):
-        with mock.patch('gitcvs.sync.Synchronizer') as S:
+        with mock.patch('bigitr.sync.Synchronizer') as S:
             with mock.patch('sys.stdout') as E:
-                self.assertRaises(SystemExit, gitcvs.main, ['-h'])
+                self.assertRaises(SystemExit, bigitr.main, ['-h'])
                 S.assert_not_called()
                 help_text = E.write.call_args_list[0][0][0]
                 self.assertTrue('\nSynchronize Git and CVS\n' in help_text)
                 self.assertTrue('\n  -h, --help            show this help message and exit\n' in help_text)
 
     def test_helpCommand(self):
-        with mock.patch('gitcvs.sync.Synchronizer') as S:
+        with mock.patch('bigitr.sync.Synchronizer') as S:
             with mock.patch('sys.stdout') as E:
-                self.assertRaises(SystemExit, gitcvs.main, ['help'])
+                self.assertRaises(SystemExit, bigitr.main, ['help'])
                 S.assert_not_called()
                 help_text = E.write.call_args_list[0][0][0]
                 self.assertTrue('\nSynchronize Git and CVS\n' in help_text)
                 self.assertTrue('\n  -h, --help            show this help message and exit\n' in help_text)
 
     def test_badcommand(self):
-        with mock.patch('gitcvs.sync.Synchronizer') as S:
+        with mock.patch('bigitr.sync.Synchronizer') as S:
             with mock.patch('sys.stdout') as E:
-                self.assertRaises(SystemExit, gitcvs.main, ['badcommand'])
+                self.assertRaises(SystemExit, bigitr.main, ['badcommand'])
                 S.assert_not_called()
                 help_text = E.write.call_args_list[0][0][0]
                 self.assertTrue('\nSynchronize Git and CVS\n' in help_text)
                 self.assertTrue('\n  -h, --help            show this help message and exit\n' in help_text)
 
     def test_syncCommand(self):
-        with mock.patch('gitcvs.Synchronize') as S:
-            self.assertRaises(SystemExit, gitcvs.main, ['sync'])
+        with mock.patch('bigitr.Synchronize') as S:
+            self.assertRaises(SystemExit, bigitr.main, ['sync'])
             S().run.assert_called_once_with()
             S.reset_mock()
-            self.assertRaises(SystemExit, gitcvs.main, ['sync', 'repo1', 'repo2'])
+            self.assertRaises(SystemExit, bigitr.main, ['sync', 'repo1', 'repo2'])
             S('repo1', 'repo2').run.assert_called_once_with()
 
     def test_importCommand(self):
-        with mock.patch('gitcvs.Import') as I:
-            self.assertRaises(SystemExit, gitcvs.main, ['import'])
+        with mock.patch('bigitr.Import') as I:
+            self.assertRaises(SystemExit, bigitr.main, ['import'])
             I().run.assert_called_once_with()
             I.reset_mock()
-            self.assertRaises(SystemExit, gitcvs.main, ['import', 'r1', 'r2'])
+            self.assertRaises(SystemExit, bigitr.main, ['import', 'r1', 'r2'])
             I('r1', 'r2').run.assert_called_once_with()
 
     def test_exportCommand(self):
-        with mock.patch('gitcvs.Export') as E:
-            self.assertRaises(SystemExit, gitcvs.main, ['export'])
+        with mock.patch('bigitr.Export') as E:
+            self.assertRaises(SystemExit, bigitr.main, ['export'])
             E().run.assert_called_once_with()
             E.reset_mock()
-            self.assertRaises(SystemExit, gitcvs.main, ['export', 'r1'])
+            self.assertRaises(SystemExit, bigitr.main, ['export', 'r1'])
             E('r1').run.assert_called_once_with()
 
     def test_mergeCommand(self):
-        with mock.patch('gitcvs.Merge') as M:
-            self.assertRaises(SystemExit, gitcvs.main, ['merge'])
+        with mock.patch('bigitr.Merge') as M:
+            self.assertRaises(SystemExit, bigitr.main, ['merge'])
             M().run.assert_called_once_with()
             M.reset_mock()
-            self.assertRaises(SystemExit, gitcvs.main, ['merge', 'r1::branch'])
+            self.assertRaises(SystemExit, bigitr.main, ['merge', 'r1::branch'])
             M('r1::branch').run.assert_called_once_with()

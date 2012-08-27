@@ -17,7 +17,7 @@
 import os
 import unittest
 
-from gitcvs import util
+from bigitr import util
 
 class TestCase(unittest.TestCase):
     @staticmethod

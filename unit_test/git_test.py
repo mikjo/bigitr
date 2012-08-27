@@ -18,11 +18,11 @@ import mock
 from cStringIO import StringIO
 import testutils
 
-from gitcvs import git, shell, context
+from bigitr import git, shell, context
 
 class TestGit(testutils.TestCase):
     def setUp(self):
-        with mock.patch('gitcvs.log.Log') as mocklog:
+        with mock.patch('bigitr.log.Log') as mocklog:
             appConfig = StringIO('[global]\n'
                                  'logdir = /logs\n'
                                  'gitdir = /git\n'
@@ -50,26 +50,26 @@ class TestGit(testutils.TestCase):
             self.mocklog = mocklog()
 
     def test_clone(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             uri = '/path/to/repo'
             self.git.clone(uri)
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'clone', uri)
 
     def test_fetch(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.fetch()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'fetch', '--all')
 
     def test_reset(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.reset()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'reset', '--hard', 'HEAD')
 
     def test_clean(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.clean()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'clean', '--force', '-x', '-d')
@@ -88,7 +88,7 @@ class TestGit(testutils.TestCase):
             mockgit['reset'].assert_called_once_with()
 
     def test_branches(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '''
 * master
   remotes/origin/HEAD -> origin/master
@@ -104,7 +104,7 @@ class TestGit(testutils.TestCase):
             )))
 
     def test_branchesNone(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '')
             branches = self.git.branches()
             r.assert_called_once_with(mock.ANY,
@@ -112,7 +112,7 @@ class TestGit(testutils.TestCase):
             self.assertEquals(branches, set())
 
     def test_branch(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '''
 * master
   other
@@ -123,7 +123,7 @@ class TestGit(testutils.TestCase):
             self.assertEquals(branch, 'master')
 
     def test_branchOther(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '''
   master
 * other
@@ -134,7 +134,7 @@ class TestGit(testutils.TestCase):
             self.assertEquals(branch, 'other')
 
     def test_refs(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '''
 a44dfd94fd9de6c27f739274f2fae99ab83fa2f5 refs/heads/master
 fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/HEAD
@@ -153,7 +153,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             ])
 
     def test_refsNone(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (1, '')
             refs = self.git.refs()
             r.assert_called_once_with(mock.ANY,
@@ -162,7 +162,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
 
 
     def test_newBranch(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.newBranch('b')
             self.assertEqual(shell.run.call_args_list[0][0][1:],
                 ('git', 'branch', 'b'))
@@ -171,19 +171,19 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEqual(shell.run.call_count, 2)
 
     def test_trackBranch(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.trackBranch('b')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'branch', '--track', 'b', 'origin/b')
 
     def test_checkoutTracking(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.checkoutTracking('b')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'checkout', '--track', 'origin/b')
 
     def test_checkoutNewImportBranch(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.checkoutNewImportBranch('b')
             self.assertEqual(shell.run.call_args_list[0][0][1:],
                 ('git', 'checkout', '--orphan', 'b'))
@@ -192,13 +192,13 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEqual(shell.run.call_count, 2)
 
     def test_checkout(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.checkout('b')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'checkout', '-f', 'b')
 
     def test_listContentFiles(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '.gitignore\0foo\0.gitmodules\0bar/baz\0')
             files = self.git.listContentFiles()
             r.assert_called_once_with(mock.ANY,
@@ -206,7 +206,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEquals(files, ['foo', 'bar/baz'])
 
     def test_statusEmpty(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '')
             status = self.git.status()
             r.assert_called_once_with(mock.ANY,
@@ -214,19 +214,19 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEquals(status, '')
 
     def test_status(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
-            r.return_value = (0, ''' M gitcvs/cvsimport.py
- M gitcvs/git.py
+        with mock.patch('bigitr.git.shell.read') as r:
+            r.return_value = (0, ''' M bigitr/cvsimport.py
+ M bigitr/git.py
 ''')
             status = self.git.status()
             r.assert_called_once_with(mock.ANY,
                 'git', 'status', '--porcelain')
-            self.assertEquals(status, ''' M gitcvs/cvsimport.py
- M gitcvs/git.py
+            self.assertEquals(status, ''' M bigitr/cvsimport.py
+ M bigitr/git.py
 ''')
 
     def test_statusIgnoredEmpty(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, '')
             status = self.git.statusIgnored()
             r.assert_called_once_with(mock.ANY,
@@ -234,33 +234,33 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEquals(status, '')
 
     def test_statusIgnored(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
-            r.return_value = (0, ''' M gitcvs/cvsimport.py
- M gitcvs/git.py
+        with mock.patch('bigitr.git.shell.read') as r:
+            r.return_value = (0, ''' M bigitr/cvsimport.py
+ M bigitr/git.py
 ''')
             status = self.git.statusIgnored()
             r.assert_called_once_with(mock.ANY,
                 'git', 'status', '--porcelain', '--ignored')
-            self.assertEquals(status, ''' M gitcvs/cvsimport.py
- M gitcvs/git.py
+            self.assertEquals(status, ''' M bigitr/cvsimport.py
+ M bigitr/git.py
 ''')
 
 
     def test_infoStatus(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.infoStatus()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'status')
 
     def test_infoDiff(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.infoDiff()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'diff', '--stat=200',
                 '--patch', '--minimal', '--irreversible-delete')
 
     def test_infoDiffFrom(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.infoDiff('from')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'diff', '--stat=200',
@@ -268,7 +268,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
                 'from..HEAD')
 
     def test_infoDiffFromTo(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.infoDiff('from', 'to')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'diff', '--stat=200',
@@ -276,13 +276,13 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
                 'from..to')
 
     def test_addAll(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.addAll()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'add', '-A', '.')
 
     def test_mergeDefault(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             shell.run.return_value = 0
             rc = self.git.mergeDefault('brnch', 'msg')
             shell.run.assert_called_once_with(mock.ANY,
@@ -290,7 +290,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEqual(rc, 0)
 
     def test_mergeDefaultFailure(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             shell.run.return_value = 1
             rc = self.git.mergeDefault('brnch', 'msg')
             shell.run.assert_called_once_with(mock.ANY,
@@ -298,33 +298,33 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             self.assertEqual(rc, 1)
 
     def test_mergeFastForward(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.mergeFastForward('brnch')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'merge', '--ff', '--ff-only', 'brnch')
 
     def test_mergeIgnore(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.mergeIgnore('b')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'merge', '--strategy=ours', '--ff',
                 '-m', 'branch "b" closed', 'b')
 
     def test_commit(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             message = 'message'
             self.git.commit(message)
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'commit', '-m', message)
 
     def test_push(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.push('origin', 'master', 'master')
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'push', 'origin', 'master:master')
 
     def test_logmessages(self):
-        with mock.patch('gitcvs.git.shell.read') as r:
+        with mock.patch('bigitr.git.shell.read') as r:
             r.return_value = (0, 'a message\n')
             msg = self.git.logmessages('since', 'until')
             shell.read.assert_called_once_with(mock.ANY,
@@ -351,13 +351,13 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
 
         with mock.patch('os.path.exists') as exists:
             with mock.patch('os.chdir') as chdir:
-                with mock.patch('gitcvs.git.Git.clone') as clone:
-                    with mock.patch('gitcvs.git.Git.refs') as refs:
-                        with mock.patch('gitcvs.git.Git.addAll') as addAll:
-                            with mock.patch('gitcvs.git.Git.commit') as commit:
-                                with mock.patch('gitcvs.git.Git.push') as push:
-                                    with mock.patch('gitcvs.util.listFiles') as lF:
-                                        with mock.patch('gitcvs.util.copyFiles') as cF:
+                with mock.patch('bigitr.git.Git.clone') as clone:
+                    with mock.patch('bigitr.git.Git.refs') as refs:
+                        with mock.patch('bigitr.git.Git.addAll') as addAll:
+                            with mock.patch('bigitr.git.Git.commit') as commit:
+                                with mock.patch('bigitr.git.Git.push') as push:
+                                    with mock.patch('bigitr.util.listFiles') as lF:
+                                        with mock.patch('bigitr.util.copyFiles') as cF:
                                             with mock.patch('__builtin__.file') as mf:
                                                 inner()
 
@@ -381,13 +381,13 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
 
         with mock.patch('os.path.exists') as exists:
             with mock.patch('os.chdir') as chdir:
-                with mock.patch('gitcvs.git.Git.clone') as clone:
-                    with mock.patch('gitcvs.git.Git.refs') as refs:
-                        with mock.patch('gitcvs.git.Git.addAll') as addAll:
-                            with mock.patch('gitcvs.git.Git.commit') as commit:
-                                with mock.patch('gitcvs.git.Git.push') as push:
-                                    with mock.patch('gitcvs.util.listFiles') as lF:
-                                        with mock.patch('gitcvs.util.copyFiles') as cF:
+                with mock.patch('bigitr.git.Git.clone') as clone:
+                    with mock.patch('bigitr.git.Git.refs') as refs:
+                        with mock.patch('bigitr.git.Git.addAll') as addAll:
+                            with mock.patch('bigitr.git.Git.commit') as commit:
+                                with mock.patch('bigitr.git.Git.push') as push:
+                                    with mock.patch('bigitr.util.listFiles') as lF:
+                                        with mock.patch('bigitr.util.copyFiles') as cF:
                                             with mock.patch('__builtin__.file') as mf:
                                                 inner()
 
@@ -400,8 +400,8 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
 
         with mock.patch('os.path.exists') as exists:
             with mock.patch('os.chdir') as chdir:
-                with mock.patch('gitcvs.git.Git.clone') as clone:
-                    with mock.patch('gitcvs.git.Git.refs') as refs:
+                with mock.patch('bigitr.git.Git.clone') as clone:
+                    with mock.patch('bigitr.git.Git.refs') as refs:
                         inner()
 
     def test_initializeGitRepositoryAlreadyDone(self):
@@ -412,7 +412,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
                 c.assert_not_called()
 
     def test_runImpPreHooks(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.runImpPreHooks('brnch')
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'precommand', 'arg'),
@@ -422,7 +422,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             ])
 
     def test_runImpPostHooks(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.runImpPostHooks('brnch')
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'postcommand', 'arg'),
@@ -432,7 +432,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             ])
 
     def test_runExpPreHooks(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.runExpPreHooks('brnch')
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'precommand', 'arg'),
@@ -442,7 +442,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
             ])
 
     def test_runExpPostHooks(self):
-        with mock.patch('gitcvs.git.shell.run'):
+        with mock.patch('bigitr.git.shell.run'):
             self.git.runExpPostHooks('brnch')
             shell.run.assert_has_calls([
                 mock.call(mock.ANY, 'postcommand', 'arg'),

@@ -19,11 +19,11 @@ from StringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import config
+from bigitr import config
 
 class TestConfig(testutils.TestCase):
     def setUp(self):
-        self.fd, self.cf = tempfile.mkstemp(suffix='.gitcvs')
+        self.fd, self.cf = tempfile.mkstemp(suffix='.bigitr')
         file(self.cf, 'r+').write('[foo]\nbar = ${FAKEHOME}\n')
         self.cfg = config.Config(self.cf)
         if 'FAKEHOME' in os.environ:

@@ -19,11 +19,11 @@ import os
 import tempfile
 import testutils
 
-from gitcvs import log, context
+from bigitr import log, context
 
 class TestLog(testutils.TestCase):
     def setUp(self):
-        self.logdir = tempfile.mkdtemp(suffix='.gitcvs')
+        self.logdir = tempfile.mkdtemp(suffix='.bigitr')
         appConfig = StringIO('''
 [global]
 logdir = %s''' %self.logdir)

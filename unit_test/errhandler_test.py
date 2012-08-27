@@ -20,7 +20,7 @@ import mock
 import sys
 import testutils
 
-from gitcvs import errhandler, context, appconfig
+from bigitr import errhandler, context, appconfig
 
 class TestErrors(testutils.TestCase):
     def setUp(self):

@@ -19,11 +19,11 @@ from cStringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import appconfig
+from bigitr import appconfig
 
 class TestAppConfig(testutils.TestCase):
     def setUp(self):
-        self.fd, self.cf = tempfile.mkstemp(suffix='.gitcvs')
+        self.fd, self.cf = tempfile.mkstemp(suffix='.bigitr')
         file(self.cf, 'r+').write('''
 [global]
 gitdir = /path/to/directory/holding/git/repositories
@@ -40,7 +40,7 @@ cvsdir = /path/to/directory/for/cvs/checkouts/for/branch/imports
 ''')
         self.cfg = appconfig.AppConfig(self.cf)
 
-        fd, self.defaults = tempfile.mkstemp(suffix='.gitcvs')
+        fd, self.defaults = tempfile.mkstemp(suffix='.bigitr')
         os.close(fd)
         file(self.defaults, 'r+').write('''
 [global]

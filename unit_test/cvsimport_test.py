@@ -20,12 +20,12 @@ from StringIO import StringIO
 import tempfile
 import testutils
 
-from gitcvs import cvsimport, context
+from bigitr import cvsimport, context
 
 class CVSImportTest(testutils.TestCase):
     def setUp(self):
-        with mock.patch('gitcvs.log.Log') as mocklog:
-            with mock.patch('gitcvs.log.LogCache') as mocklogcache:
+        with mock.patch('bigitr.log.Log') as mocklog:
+            with mock.patch('bigitr.log.LogCache') as mocklogcache:
                 appConfig = StringIO('[global]\n'
                                      'logdir = /logdir\n'
                                      'gitdir = /gitdir\n'
