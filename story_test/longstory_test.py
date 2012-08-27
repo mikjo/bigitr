@@ -1127,3 +1127,6 @@ class TestStoryCommands(WorkDir):
         cwd2 = os.getcwd()
         self.assertEqual(cwd1, cwd2)
         self.assertNoTracebackLogs()
+
+        os.system('%s help' % self.exe)
+        self.assertNoTracebackLogs()
