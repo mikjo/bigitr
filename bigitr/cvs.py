@@ -78,12 +78,6 @@ class CVS(object):
         shell.run(self.log,
             'cvs', 'export', '-kk', '-d', targetDir, '-r', self.branch, self.location)
 
-    def disableLogKeyword(self, fileList):
-        shell.run(self.log,
-            'sed', '-i', '-r',
-            r's/\$Log.*\$/OldLog:/g',
-            *fileList)
-
     @setCVSROOT
     @inCVSDIR
     def checkout(self):

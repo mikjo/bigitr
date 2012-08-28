@@ -132,7 +132,9 @@ set to the Git working directory or CVS checkout.  These can be
 specified for all repositories or for a single repository, and
 for all branches or only individual branches.  Any arguments are
 included in the configuration using shell syntax; no extra
-arguments are added by Bigitr at run time.
+arguments are added by Bigitr at run time.  Hooks that exit with
+an error cause the current Bigitr repository operation to halt
+immediately, though additional repositories will still be processed.
 
 
 Configuration
@@ -360,6 +362,14 @@ contents of files to be committed in ways that are not implemented
 as specific configuration.  The main use for post hooks is arbitrary
 notification.
 
+Sample hooks are provided in the libexec directory.
+
+When writing hooks as shell scripts, it is normally best to use the
+`-e` option to exit the script with an error if any program that is
+invoked exits with an unhandled error.  This will halt processing
+for that repository.
+
+
 ### Tool configuration ###
 
 Bigitr intentionally honors Git and CVS configuration.  That is,
@@ -448,16 +458,16 @@ to specify all branches in that repository.
 Requirements
 ============
 
-Bigitr depends on precise behavior of Git and CVS, and on the "-i"
-option to sed.  The behavior of this tool should be validated after
-*any* update to any of the programs which it calls: git, cvs, and sed,
-as well as after any other update that might affect them (libraries,
-system language configuration, etc.).  A test suite is provided to
-help validate this behavior.  If you discover failures not exposed by
-the test suite, please augment the test suite.  In particular,
-additional functional tests or story tests would be appropriate.
-To run all the tests, invoke the command `make alltests` and confirm
-that all the tests complete successfully.
+Bigitr depends on precise behavior of Git and CVS.  The behavior
+of this tool should be validated after *any* update to any of the
+programs which it calls: git, cvs, any programs called from any
+configured hooks; as well as after any other update that might
+affect them (libraries, system language configuration, etc.).
+A test suite is provided to help validate this behavior.  If you
+discover failures not exposed by the test suite, please augment the
+test suite.  In particular, additional functional tests or story
+tests would be appropriate.  To run all the tests, invoke the command
+`make alltests` and confirm that all the tests complete successfully.
 
 This tool automates only (part of) the **process** of synchronization
 between Git and CVS branches.  It does not automate any **monitoring**

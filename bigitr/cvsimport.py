@@ -61,7 +61,6 @@ class Importer(object):
             raise RuntimeError("CVS branch '%s' for location '%s' contains no files"
                                %(CVS.branch, CVS.location))
         os.chdir(exportDir)
-        CVS.disableLogKeyword(exportedFiles)
 
         Git.initializeGitRepository()
 

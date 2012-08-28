@@ -693,8 +693,7 @@ class TestStoryAPI(WorkDir):
         self.assertTrue('$Revision$' in keywords)
         self.assertTrue('$Source$' in keywords)
         self.assertTrue('$State$' in keywords)
-        self.assertTrue('$Log:' not in keywords)
-        self.assertTrue('OldLog:' in keywords)
+        self.assertTrue('$Log$' in keywords)
         # we need to add a new file in Git after the checkout is created
         # in CVS, to test the -kk option to cvs add...
         os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))

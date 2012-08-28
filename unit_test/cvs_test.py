@@ -84,12 +84,6 @@ class TestCVS(testutils.TestCase):
             self.assertEqual(os.environ['CVSROOT'],
                 self.ctx.getCVSRoot('repo'))
 
-    def test_disableLogKeyword(self):
-        with mock.patch('bigitr.git.shell.run'):
-            self.cvs.disableLogKeyword(['a'])
-            shell.run.assert_called_once_with(mock.ANY,
-                'sed', '-i', '-r', mock.ANY, 'a')
-
     def test_checkout(self):
         with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', getcwd=mock.DEFAULT,
