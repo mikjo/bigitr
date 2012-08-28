@@ -99,16 +99,15 @@ class Importer(object):
                 util.copyFiles(skeleton, repoDir, skelFiles)
 
         os.chdir(repoDir)
+        Git.runImpPreHooks(gitbranch)
         if Git.status():
             # there is some change to commit
-            Git.runImpPreHooks(gitbranch)
             Git.infoStatus()
             Git.infoDiff()
             # store Git.log.lastOutput() to email after successful push
             Git.addAll()
 
         # Git.addAll() will have regularized line ending differences,
-        # Git.runImpPreHooks may have done other normalization,
         # and in case that is the only change, we need to check again
         # on status
         if Git.status():

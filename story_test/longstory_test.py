@@ -814,6 +814,33 @@ class TestStoryAPI(WorkDir):
         exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
         self.assertEqual(os.stat(self.cvsdir+'/module1/b2/module1/newline').st_size, 4)
 
+    def test_lowlevel6gitPrehookChangesCommitted(self):
+        'test that prehook.imp.git script changes are committed'
+        self.unpack('TESTROOT.6.tar.gz')
+
+        scriptdir = self.workdir + '/script'
+        os.makedirs(scriptdir)
+        file(scriptdir + '/tag', 'w').write('\n'.join((
+            '#!/bin/sh -x',
+            'touch createdByTag',
+            '',
+        )))
+        os.chmod(scriptdir + '/tag', 0755)
+
+
+        imp = cvsimport.Importer(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; git checkout -t origin/cvs-b1' %self.gitco)
+        self.assertFalse(os.path.exists(self.gitco+'/module1/createdByTag'))
+
+        self.ctx._rm.set('git/module1', 'prehook.imp.git.cvs-b1', scriptdir+'/tag')
+        imp.importcvs('git/module1', Git, CVSb1, 'b1', 'cvs-b1')
+        os.system('cd %s/module1; git pull' %self.gitco)
+        self.assertTrue(os.path.exists(self.gitco+'/module1/createdByTag'))
+
     def test_lowlevel6RunAllHookTypes(self):
         'test running all the types of hooks'
         self.unpack('TESTROOT.6.tar.gz')
