@@ -484,7 +484,11 @@ use of "with").
 
 Bigitr requires nose (may be packaged as python-nose), coverage
 (may be packaged as python-coverage), and mock (may be packaged as
-python-mock).  The documentation is maintained in markdown.
+python-mock).  If your version of python does not include argparse,
+you will need the externally-packaged argparse (may be packaged as
+python-argparse) as well.
+
+The documentation is maintained in markdown.
 
 
 
