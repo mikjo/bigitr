@@ -67,19 +67,21 @@ class Email(object):
 
     @ifEmail
     def send(self, allout, allerr):
-        # First, attach the entire repository log; the individual
-        # command messages will be embedded in it
-        self.addAttachment(allerr, 'all errors')
-        self.addAttachment(allout, 'all output')
-        self._send()
+        # send email only if an error has been attached
+        if self.msg.get_payload():
+            # First, attach the entire repository log; the individual
+            # command messages will be embedded in it
+            self.addAttachment(allerr, 'all errors')
+            self.addAttachment(allout, 'all output')
+            self._send()
+        if self.cache and self.cache():
+            del self.cache()[self.repo]
 
     def _send(self):
         s = smtplib.SMTP(self.ctx.getSmartHost())
         s.sendmail(self.ctx.getMailFrom(),
                    self.recipients, self.msg.as_string())
         s.quit()
-        if self.cache and self.cache():
-            del self.cache()[self.repo]
 
 class MailCache(dict):
     def __init__(self, ctx):

@@ -28,8 +28,12 @@ import testutils
 from bigitr import mail, context
 
 class FakeSMTPServer(smtpd.SMTPServer):
+    def __init__(self, dir, *args, **kwargs):
+        self.basedir = dir
+        smtpd.SMTPServer.__init__(self, *args, **kwargs)
+
     def process_message(self, peer, mailfrom, rcpttos, data):
-        pass
+        file(self.basedir + '/data', 'w').write(data)
 
 class TestMail(testutils.TestCase):
     def setUp(self):
@@ -51,7 +55,7 @@ email = re@cip1 re@cip2
     def startSendmail(self):
         self.pid = os.fork()
         if not self.pid:
-            FakeSMTPServer(('localhost', 16294), ('localhost', 0))
+            FakeSMTPServer(self.logdir, ('localhost', 16294), ('localhost', 0))
             asyncore.loop()
 
     def tearDown(self):
@@ -101,11 +105,22 @@ email = re@cip1 re@cip2
             self.assertTrue('filename="all_errors.txt"' in s)
             self.assertTrue('filename="all_output.txt"' in s)
 
+    def test_sendWithEmptyBody(self):
+        with mock.patch('smtplib.SMTP') as s:
+            server = s.return_value
+            m = self.ctx.mails['repo1']
+            self.assertEqual(self.ctx.mails.keys(), ['repo1'])
+            m.send('all\noutput', 'all\nerrors')
+            server.sendmail.assert_not_called()
+            server.quit.assert_not_called()
+            self.assertEqual(self.ctx.mails.keys(), [])
+
     def test__send(self):
         with mock.patch('smtplib.SMTP') as s:
             server = s.return_value
             m = self.ctx.mails['repo1']
             self.assertEqual(self.ctx.mails.keys(), ['repo1'])
+            m.addOutput('badcommand', 'bad\noutput', 'bad\nerrors')
             m.send('all\noutput', 'all\nerrors')
             server.sendmail.assert_called_with(
                 'send@er', ['re@cip1', 're@cip2'], mock.ANY)
@@ -114,5 +129,8 @@ email = re@cip1 re@cip2
 
     def test__send_through(self):
         self.startSendmail()
+        self.assertFalse(os.path.exists(self.logdir + '/data'))
         m = self.ctx.mails['repo1']
+        m.addOutput('badcommand', 'bad\noutput', 'bad\nerrors')
         m.send('all\noutput', 'all\nerrors')
+        self.assertTrue(os.path.exists(self.logdir + '/data'))
