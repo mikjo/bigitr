@@ -22,6 +22,7 @@ from bigitr import cvsimport
 from bigitr import errhandler
 from bigitr import gitexport
 from bigitr import git
+from bigitr import shell
 
 class Synchronizer(object):
     def __init__(self, ctx):
@@ -35,6 +36,10 @@ class Synchronizer(object):
             Git = git.Git(self.ctx, repository)
             try:
                 self.synchronize(repository, Git)
+            except shell.ErrorExitCode, e:
+                # report errors from commands that fail
+                Git.log.mailLastOutput(str(e))
+                self.err.report(repository)
             except:
                 # report and keep going; no reason for one
                 # repository to keep other repositories from synchronizing

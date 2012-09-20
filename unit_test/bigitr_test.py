@@ -26,6 +26,7 @@ from bigitr import cvsimport
 from bigitr import git
 from bigitr import gitexport
 from bigitr import gitmerge
+from bigitr import shell
 from bigitr import sync
 
 class TestRunner(testutils.TestCase):
@@ -111,7 +112,7 @@ class TestRunner(testutils.TestCase):
             r = bigitr._Runner(mock.Mock())
             self.assertRaises(NotImplementedError, r.run)
 
-    def test_process(self):
+    def runProcessWithSideEffect(self, side_effect=None):
         with mock.patch('bigitr.git.Git') as G:
             with mock.patch('bigitr._Runner.__init__') as I:
                 I.return_value = None
@@ -121,14 +122,31 @@ class TestRunner(testutils.TestCase):
                     r.ctx = mock.Mock()
                     c = mock.Mock()
                     f = mock.Mock()
+                    g = G(r.ctx, 'repo')
+                    if side_effect is not None:
+                        f.side_effect = side_effect
                     r.process(c, f)
-                    f.assert_called_once_with('repo', G(r.ctx, 'repo'), requestedBranch=None)
-                    c.err.report.assert_not_called()
-                    f.reset_mock()
-                    f.side_effect = lambda x, y: {}[1]
-                    r.process(c, f)
-                    f.assert_called_once_with('repo', G(r.ctx, 'repo'), requestedBranch=None)
-                    c.err.report.assert_called_once_with('repo')
+                    f.assert_called_once_with('repo', g, requestedBranch=None)
+                    return c, g
+
+    def test_process(self):
+        c, g = self.runProcessWithSideEffect()
+        c.err.report.assert_not_called()
+        g.log.mailLastOutput.assert_not_called()
+
+    def test_processShellError(self):
+        def raiseShellError():
+            raise shell.ErrorExitCode(1)
+        c, g = self.runProcessWithSideEffect(lambda *x, **z: raiseShellError())
+        c.err.report.assert_called_once_with('repo')
+        g.log.mailLastOutput.assert_called_once_with(mock.ANY)
+
+
+    def test_processOtherError(self):
+        c, g = self.runProcessWithSideEffect(lambda *x, **z: {}[1])
+        c.err.report.assert_called_once_with('repo')
+        g.log.mailLastOutput.assert_not_called()
+
 
     def test_close(self):
         with mock.patch('bigitr._Runner.getContext') as C:

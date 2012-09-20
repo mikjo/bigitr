@@ -19,6 +19,12 @@ import os
 import subprocess
 import time
 
+class ErrorExitCode(ValueError):
+    def __init__(self, retcode, *args, **kwargs):
+        self.retcode = retcode
+        ValueError.__init__(self, 'Unexpected exit code %d' %retcode,
+            *args, **kwargs)
+
 class LoggingShell(subprocess.Popen):
     def __init__(self, log, *args, **kwargs):
         self.log = log
@@ -52,7 +58,7 @@ class LoggingShell(subprocess.Popen):
             for line in self.log.lastError().split('\n'):
                 logging.error(line)
             logging.error(self.log.thiserr)
-            raise ValueError('Unexpected return code %d' %retcode)
+            raise ErrorExitCode(retcode)
         return retcode
 
 def run(log, *args, **kwargs):

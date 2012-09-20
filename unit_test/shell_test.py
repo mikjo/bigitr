@@ -131,21 +131,21 @@ logdir = %s
     def test_RaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         s = shell.LoggingShell(l, 'false')
-        self.assertRaises(ValueError, s.finish)
+        self.assertRaises(shell.ErrorExitCode, s.finish)
         l.close()
         self.assertTrue(self.logdata.getvalue().startswith('\n'))
         self.logdata.truncate(0)
 
     def test_runRaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
-        self.assertRaises(ValueError, shell.run, l, 'false')
+        self.assertRaises(shell.ErrorExitCode, shell.run, l, 'false')
         l.close()
         self.assertTrue(self.logdata.getvalue().startswith('\n'))
         self.logdata.truncate(0)
 
     def test_readRaiseError(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
-        self.assertRaises(ValueError, shell.read, l, 'false')
+        self.assertRaises(shell.ErrorExitCode, shell.read, l, 'false')
         l.close()
         self.assertTrue(self.logdata.getvalue().startswith('\n'))
         self.logdata.truncate(0)

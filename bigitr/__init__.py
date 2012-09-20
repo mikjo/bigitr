@@ -23,6 +23,7 @@ from bigitr import cvsimport
 from bigitr import git
 from bigitr import gitexport
 from bigitr import gitmerge
+from bigitr import shell
 from bigitr import sync
 
 class _Runner(object):
@@ -61,6 +62,10 @@ class _Runner(object):
                     # empty branch is unspecified
                     branch = None
                 f(repository, Git, requestedBranch=branch)
+            except shell.ErrorExitCode, e:
+                # report errors from commands that fail
+                Git.log.mailLastOutput(str(e))
+                c.err.report(repository)
             except:
                 c.err.report(repository)
 

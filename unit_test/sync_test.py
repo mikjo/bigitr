@@ -20,7 +20,7 @@ from StringIO import StringIO
 import tempfile
 import testutils
 
-from bigitr import sync, context, git
+from bigitr import sync, context, git, shell
 
 class TestSync(testutils.TestCase):
     def setUp(self):
@@ -71,7 +71,7 @@ class TestSync(testutils.TestCase):
             mock.call('repo2', mock.ANY)])
         self.sync.err.assert_no_calls()
 
-    def test_synchronizeAllWithError(self):
+    def test_synchronizeAllWithPythonError(self):
         def raiseAnError(repo, Git):
             if repo == 'repo':
                 1/0
@@ -87,3 +87,22 @@ class TestSync(testutils.TestCase):
         self.sync.exp.exportBranches.assert_has_calls([
             mock.call('repo', mock.ANY),
             mock.call('repo2', mock.ANY)])
+        self.ctx.logs['repo'].mailLastOutput.assert_not_called()
+
+    def test_synchronizeAllWithCommandError(self):
+        def raiseAnError(repo, Git):
+            if repo == 'repo':
+                raise shell.ErrorExitCode(1)
+
+        self.sync.exp.exportBranches.side_effect = raiseAnError
+        self.sync.synchronizeAll()
+        self.sync.err.report.assert_called_once_with('repo')
+        self.sync.imp.importBranches.assert_has_calls([
+            mock.call('repo', mock.ANY),
+            # NOT second mock.call('repo', mock.ANY),
+            mock.call('repo2', mock.ANY),
+            mock.call('repo2', mock.ANY)])
+        self.sync.exp.exportBranches.assert_has_calls([
+            mock.call('repo', mock.ANY),
+            mock.call('repo2', mock.ANY)])
+        self.ctx.logs['repo'].mailLastOutput.assert_called_once_with(mock.ANY)
