@@ -129,8 +129,20 @@ email = re@cip1 re@cip2
 
     def test__send_through(self):
         self.startSendmail()
-        self.assertFalse(os.path.exists(self.logdir + '/data'))
+        msgName = self.logdir + '/data'
+        self.assertFalse(os.path.exists(msgName))
         m = self.ctx.mails['repo1']
         m.addOutput('badcommand', 'bad\noutput', 'bad\nerrors')
         m.send('all\noutput', 'all\nerrors')
-        self.assertTrue(os.path.exists(self.logdir + '/data'))
+        self.assertTrue(os.path.exists(msgName))
+        msg = file(msgName).read()
+        self.assertTrue('\nSubject: repo1: bigitr error report\n' in msg)
+        self.assertTrue('\n\nBigitr error report for repository repo1\n' in msg)
+        self.assertTrue('attachment; filename="errors_from_badcommand.txt"\n' in msg)
+        self.assertTrue('\n\nbad\nerrors\n' in msg)
+        self.assertTrue('attachment; filename="output_from_badcommand.txt"\n' in msg)
+        self.assertTrue('\n\nbad\noutput\n' in msg)
+        self.assertTrue('attachment; filename="all_errors.txt"\n' in msg)
+        self.assertTrue('\n\nall\nerrors\n' in msg)
+        self.assertTrue('attachment; filename="all_output.txt"\n' in msg)
+        self.assertTrue('\n\nall\noutput\n' in msg)
