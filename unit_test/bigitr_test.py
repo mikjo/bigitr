@@ -48,37 +48,31 @@ class TestRunner(testutils.TestCase):
 
     def test_runner(self):
         with mock.patch('bigitr.context.Context') as C:
-            args = mock.Mock(appconfig='~/.bigitr',
-                             config='${FOO}/repoconf',
-                             repository=[['repo1', 'repo2']])
-            r = bigitr._Runner(args)
+            r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', ['repo1', 'repo2'])
             C.assert_called_once_with('/hm/.bigitr', '/foo/repoconf')
-            self.assertEqual(args, r.args)
+            self.assertEqual(r.appconfig, '~/.bigitr')
+            self.assertEqual(r.config, '${FOO}/repoconf')
             self.assertEqual(r.repos, ['repo1', 'repo2'])
             self.assertEqual(r.ctx, C('/hm/.bigitr', '/foo/repoconf'))
 
     def test_getContext(self):
         with mock.patch('bigitr.context.Context') as C:
             with mock.patch('bigitr._Runner.fileName') as F:
-                args = mock.Mock(repository=[[]])
-                r = bigitr._Runner(args)
+                r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
                 C.assert_called_once_with(F(), F())
 
     def test_getBranchMapsWithDefault(self):
         with mock.patch('bigitr._Runner.getContext') as C:
-            args = mock.Mock(repository=[[]])
-            r = bigitr._Runner(args)
+            r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
             r.ctx.getRepositories.return_value = ['foo']
             r.ctx.getRepositoryByName.side_effect = lambda x: x
             l = r.getBranchMaps()
             self.assertEqual(l, [['foo', None]])
             r.ctx.getRepositories.assert_called_once_with()
-            self.assertEqual(args, r.args)
 
     def test_getBranchMapsWithName(self):
         with mock.patch('bigitr._Runner.getContext') as C:
-            args = mock.Mock(repository=[['foo']])
-            r = bigitr._Runner(args)
+            r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', ['foo'])
             r.ctx.getRepositoryByName.return_value = '/foo'
             l = r.getBranchMaps()
             self.assertEqual(l, [['/foo', None]])
@@ -86,8 +80,7 @@ class TestRunner(testutils.TestCase):
 
     def test_getBranchMapsWithBadName(self):
         with mock.patch('bigitr._Runner.getContext') as C:
-            args = mock.Mock(repository=[['dne']])
-            r = bigitr._Runner(args)
+            r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', ['dne'])
             r.ctx.getRepositoryByName.side_effect = lambda x: {}[x]
             self.assertRaises(KeyError, r.getBranchMaps)
             r.ctx.getRepositoryByName.assert_called_once_with('dne')
@@ -95,8 +88,8 @@ class TestRunner(testutils.TestCase):
 
     def test_getBranchMapsWithBranches(self):
         with mock.patch('bigitr._Runner.getContext') as C:
-            args = mock.Mock(repository=[['repo::b1', 'repo2::b2', 'repo::3::']])
-            r = bigitr._Runner(args)
+            r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf',
+                               ['repo::b1', 'repo2::b2', 'repo::3::'])
             r.ctx.getRepositoryByName.side_effect = lambda x: x
             l = r.getBranchMaps()
             self.assertEqual(l, [['repo', 'b1'], ['repo2', 'b2'], ['repo::3', '']])
@@ -118,7 +111,7 @@ class TestRunner(testutils.TestCase):
                 I.return_value = None
                 with mock.patch('bigitr._Runner.getBranchMaps') as R:
                     R.return_value = [['repo', None]]
-                    r = bigitr._Runner(mock.Mock())
+                    r = bigitr._Runner(mock.Mock(), mock.Mock(), mock.Mock())
                     r.ctx = mock.Mock()
                     c = mock.Mock()
                     f = mock.Mock()
@@ -150,8 +143,7 @@ class TestRunner(testutils.TestCase):
 
     def test_close(self):
         with mock.patch('bigitr._Runner.getContext') as C:
-            args = mock.Mock(repository=[[]])
-            r = bigitr._Runner(args)
+            r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
             l = mock.Mock()
             r.ctx.logs.values.return_value = [l]
             r.close()

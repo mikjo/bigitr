@@ -27,14 +27,15 @@ from bigitr import shell
 from bigitr import sync
 
 class _Runner(object):
-    def __init__(self, args):
-        self.args = args
-        self.repos = args.repository[0]
+    def __init__(self, appconfig, config, repos):
+        self.appconfig = appconfig
+        self.config = config
+        self.repos = repos
         self.ctx = self.getContext()
 
     def getContext(self):
-        return context.Context(self.fileName(self.args.appconfig),
-                               self.fileName(self.args.config))
+        return context.Context(self.fileName(self.appconfig),
+                               self.fileName(self.config))
 
     def fileName(self, name):
         return os.path.abspath(os.path.expandvars(os.path.expanduser(name)))
@@ -116,13 +117,13 @@ def main(argv):
         ap.print_help()
         raise SystemExit(0)
     elif args.subcommand == 'sync':
-        raise SystemExit(Synchronize(args).run())
+        raise SystemExit(Synchronize(args.appconfig, args.config, args.repository[0]).run())
     elif args.subcommand == 'import':
-        raise SystemExit(Import(args).run())
+        raise SystemExit(Import(args.appconfig, args.config, args.repository[0]).run())
     elif args.subcommand == 'export':
-        raise SystemExit(Export(args).run())
+        raise SystemExit(Export(args.appconfig, args.config, args.repository[0]).run())
     elif args.subcommand == 'merge':
-        raise SystemExit(Merge(args).run())
+        raise SystemExit(Merge(args.appconfig, args.config, args.repository[0]).run())
 
     # unrecognized subcommand
     ap.print_help()
