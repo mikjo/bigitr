@@ -27,15 +27,15 @@ PDB=--pdb -s
 COV=--with-coverage --cover-package bigitr
 
 unit:
-	PYTHONPATH=.:$$PYTHONPATH nosetests $(PDB) $(COV) unit_test/
+	PYTHONPATH=. nosetests $(PDB) $(COV) unit_test/
 
 func:
-	#PYTHONPATH=.:$$PYTHONPATH nosetests $(PDB) $(COV) func_test/
+	#PYTHONPATH=. nosetests $(PDB) $(COV) func_test/
 
 story:
-	PYTHONPATH=.:$$PYTHONPATH BASEDIR=$$(pwd) nosetests $(PDB) $(COV) story_test/
+	PYTHONPATH=. BASEDIR=$$(pwd) nosetests $(PDB) $(COV) story_test/
 
 alltests:
-	PYTHONPATH=.:$$PYTHONPATH BASEDIR=$$(pwd) nosetests $(PDB) $(COV)
+	PYTHONPATH=. BASEDIR=$$(pwd) nosetests $(PDB) $(COV)
 
 tests: unit func story
