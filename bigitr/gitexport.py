@@ -154,7 +154,9 @@ class Exporter(object):
         AddedFiles = GitFileSet - CVSFileSet
         CommonFiles = GitFileSet.intersection(CVSFileSet)
         GitDirs = set(os.path.dirname(x) for x in GitFileSet)
+        GitDirs = set(x for x in GitDirs if x)
         CVSDirs = set(os.path.dirname(x) for x in CVSFileSet)
+        CVSDirs = set(x for x in CVSDirs if x)
         AddedDirs = GitDirs - CVSDirs
         return GitFileSet, DeletedFiles, AddedFiles, CommonFiles, AddedDirs
 

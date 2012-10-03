@@ -938,6 +938,29 @@ class TestStoryAPI(WorkDir):
         exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
         self.assertTrue('content' in
             file(self.cvsroot+'/module1/new/directory/tree/Attic/file,v').read())
+        os.system('cd %s/module1; '
+                  'git rm 1 2 3 b1.1 cascade; '
+                  'git commit -m "remove all files from root dir"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
+        os.system('cd %s/module1; '
+                  'echo somethingelse > new/directory/tree/other; '
+                  'mkdir -p new/dir2/othertree; '
+                  'echo blah > new/dir2/othertree/foo; '
+                  'git rm new/directory/tree/file; '
+                  'echo rootfile > rootfile; '
+                  'git add new rootfile; '
+                  'git commit -a -m "add first file to root with other changes"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
+        self.assertTrue('somethingelse' in
+            file(self.cvsroot+'/module1/new/directory/tree/Attic/other,v').read())
+        self.assertTrue('blah' in
+            file(self.cvsroot+'/module1/new/dir2/othertree/Attic/foo,v').read())
+        self.assertTrue('rootfile' in
+            file(self.cvsroot+'/module1/Attic/rootfile,v').read())
 
 
 
