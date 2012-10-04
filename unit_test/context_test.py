@@ -17,16 +17,32 @@
 from cStringIO import StringIO
 import testutils
 
-from bigitr import context, log
+from bigitr import appconfig
+from bigitr import context
+from bigitr import log
+from bigitr import repositorymap
 
 class TestLoggingShell(testutils.TestCase):
     def setUp(self):
-        appConfig = StringIO('[global]\nlogdir = /logs\n'
-                             '[export]\ncvsdir = /cvs\n'
-                             '[import]\ncvsdir = /cvsin\n'
-                             )
-        repConfig = StringIO('[dir/repo]\ncvspath = cvsprefix/rEpo')
-        self.ctx = context.Context(appConfig, repConfig)
+        self.appConfig = StringIO('[global]\nlogdir = /logs\n'
+                                 '[export]\ncvsdir = /cvs\n'
+                                 '[import]\ncvsdir = /cvsin\n'
+                                 )
+        self.repConfig = StringIO('[dir/repo]\ncvspath = cvsprefix/rEpo')
+        self.ctx = context.Context(self.appConfig, self.repConfig)
+
+    def assertContextObjectsNotString(self):
+        self.assertTrue(isinstance(self.ctx._ac, appconfig.AppConfig))
+        self.assertTrue(isinstance(self.ctx._rm, repositorymap.RepositoryConfig))
+
+    def test_initTakesStringOrObjects(self):
+        # strings resolved to objects in setUp
+        self.assertContextObjectsNotString()
+        # now pass in objects
+        appCfg = appconfig.AppConfig(self.appConfig)
+        repCfg = repositorymap.RepositoryConfig(self.repConfig)
+        self.ctx = context.Context(appCfg, repCfg)
+        self.assertContextObjectsNotString()
 
     def test_Internal(self):
         self.assertTrue(isinstance(self.ctx.logs, log.LogCache))

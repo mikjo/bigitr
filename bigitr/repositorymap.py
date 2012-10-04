@@ -35,21 +35,6 @@ class RepositoryConfig(config.Config):
             self.repos[name] = r
         self.requireAbsolutePaths('skeleton')
 
-    def getDefault(self, section, key, error=True):
-        if self.has_option(section, key):
-            return self.get(section, key)
-        if self.has_option('GLOBAL', key):
-            return self.get('GLOBAL', key)
-        if not error:
-            return None
-        # raise contextually meaningful NoOptionError using self.get
-        self.get(section, key)
-
-    def getOptional(self, section, key):
-        if self.has_option(section, key):
-            return self.get(section, key)
-        return None
-
     def getRepositories(self):
         return set(self.sections()) - set(('GLOBAL',))
 
@@ -63,10 +48,10 @@ class RepositoryConfig(config.Config):
         return self.repos[repositoryName]
 
     def getCVSRoot(self, repository):
-        return self.getDefault(repository, 'cvsroot')
+        return self.getGlobalFallback(repository, 'cvsroot')
 
     def getGitRef(self, repository):
-        gitroot = self.getDefault(repository, 'gitroot')
+        gitroot = self.getGlobalFallback(repository, 'gitroot')
         # this test needs to handle more cases
         if gitroot.startswith('/') or '://' in gitroot:
             # directory paths, http/s
@@ -78,7 +63,7 @@ class RepositoryConfig(config.Config):
         return self.get(repository, 'cvspath')
 
     def getSkeleton(self, repository):
-        return self.getDefault(repository, 'skeleton', error=False)
+        return self.getGlobalFallback(repository, 'skeleton', error=False)
 
     def getBranchFrom(self, repository):
         return self.getOptional(repository, 'branchfrom')
@@ -95,7 +80,7 @@ class RepositoryConfig(config.Config):
 
     def getCVSVariables(self, repository):
         'return: ["VARIABLE=value", ...]'
-        return ['='.join((x[7:], '' + self.getDefault(repository, x)))
+        return ['='.join((x[7:], '' + self.getGlobalFallback(repository, x)))
                 for x in sorted(set(self.options(repository) +
                                     self.options('GLOBAL')))
                 if x.startswith('cvsvar.')]
@@ -113,21 +98,21 @@ class RepositoryConfig(config.Config):
                     if x.startswith('merge.'))
 
     def getHook(self, type, when, repository):
-        return self.getDefault(repository, when+'hook.'+type, error=False)
+        return self.getGlobalFallback(repository, when+'hook.'+type, error=False)
 
     def getHookDir(self, direction, type, when, repository):
         if direction:
-            return self.getDefault(repository, when+'hook.'+direction+'.'+type,
+            return self.getGlobalFallback(repository, when+'hook.'+direction+'.'+type,
                                    error=False)
         return None
 
     def getHookBranch(self, type, when, repository, branch):
-        return self.getDefault(repository, when+'hook.'+type+'.'+branch,
+        return self.getGlobalFallback(repository, when+'hook.'+type+'.'+branch,
                                error=False)
 
     def getHookDirBranch(self, direction, type, when, repository, branch):
         if direction:
-            return self.getDefault(repository, when+'hook.'+direction+'.'+type+'.'+branch,
+            return self.getGlobalFallback(repository, when+'hook.'+direction+'.'+type+'.'+branch,
                                    error=False)
         return None
 
@@ -158,7 +143,18 @@ class RepositoryConfig(config.Config):
         return self.getHooksBranch('cvs', None, 'post', repository, branch)
 
     def getEmail(self, repository):
-        email = self.getDefault(repository, 'email', error=False)
+        email = self.getGlobalFallback(repository, 'email', error=False)
         if email:
             return email.split()
         return None
+
+    def addEmail(self, repository, addresses):
+        if not addresses:
+            return
+        email = self.getGlobalFallback(repository, 'email', error=False)
+        if email:
+            email = email.split()
+            email.extend(addresses)
+            self.set(repository, 'email', ' '.join(email))
+        else:
+            self.set(repository, 'email', ' '.join(addresses))

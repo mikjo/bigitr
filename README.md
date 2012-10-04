@@ -389,6 +389,94 @@ before running Bigitr if your configuration requires CVS login
 authentication.
 
 
+### Daemon configuration ###
+
+A daemon that synchronizes bigitr on a schedule is also included.
+You can run bigitr from cron, but if you do so, you will need to
+do your own locking to avoid running two instances in parallel
+against the same repositories.  You can instead run the bigitrd
+daemon which implements its own locking, and can iterate over as
+many application configurations and repository configurations as
+you like.
+
+A bigitrd configuration file (by default, the file named by the
+`BIGITR_DAEMON_CONFIG` environment variable, or `~/.bigitrd` if it
+is not set, or provided via the `--config` option to bigitrd) has
+one section per application configuration file, plus an optional
+`GLOBAL` (all capitals) section that is inherited by all the
+application configuration sections in that file.
+
+    [GLOBAL]
+    # currently, parallel conversion is not implemented
+    parallel = 1
+    pollfrequency = 5m
+    syncfrequency = 1d
+    appconfig = /path/to/default/appconfig
+    email = recipient@host other@anotherhost
+    mailfrom = sender@host
+    smarthost = machine.that.speaks.smtp
+    mailall = false
+
+    [human-readable name]
+    appconfig = /path/to/this/appconfig
+    repoconfig = /path/to/this/repoconfig
+
+    [another human-readable name]
+    # appconfig inherited
+    repoconfig = /path/to/many/repository/configs*
+
+*   `GLOBAL.parallel`: not currently implemented; reserved for
+    implementing parallel conversions in the future (like the
+    make `-j` option).
+
+*   `GLOBAL.pollfrequency`: Minimum frequency at which to check
+    Git repositories to see whether they have additional commits
+    since the last synchronization.  This is the minimum time to
+    wait since the previous poll or sync started.  If bigitrd is
+    waiting for long-running conversions of some repositories,
+    then it can take longer between poll operations.  Specified in
+    days, hours, minutes, and seconds.  If no units are specified,
+    seconds are assumed.  `1h20m10s` would be one hour, twenty
+    minutes, and ten seconds.  Five minutes (`5m`) is the default.
+    Bigitrd determines whether to sync based on whether `git fetch`
+    changes any refs.
+
+*   `GLOBAL.syncfrequency`: Minimum frequency at which to synchronize,
+    whether or not bigitrd sees a change to the Git repository.
+    Specified just like `GLOBAL.pollfrequency`.  The default is
+    `1d`.  If `syncfrequency` is shorter than `pollfrequency`, then
+    polling will never be used to determine whether to synchronize.
+    The first synchronization pass after bititrd starts or restarts
+    will always be a full synchronization.
+
+*   `GLOBAL.email`: Email address to send errors from bigitrd itself.
+    This does not override errors from the conversion process, which
+    are mailed to the email addresses specified in repository config
+    files.  This is the address that should get tracebacks from the
+    operation of the daemon itself, outside of the conversion process.
+    `GLOBAL.mailfrom` must also be set to send email.
+
+*   `GLOBAL.mailfrom`: Sender email address for errors mail from
+    bigitrd itself.  `GLOBAL.email` must also be set to send email.
+
+*   `GLOBAL.smarthost`: Hostname of system that speaks SMTP.  Defaults
+    to `localhost`.
+
+*   `GLOBAL.mailall`: Mail all repository errors, as well as daemon
+    errors, to all `GLOBAL.email` addresses.  This cases bigitrd to
+    add `GLOBAL.email` to the list of addresses for which email will
+    be sent for all repositories processed, even if those repositories
+    have no other email addresses included in their repository
+    configuration.
+
+*   `[name].appconfig`: Path (not a glob) to a single application
+    configuration file that should be used for the `[name]` section.
+
+*   `[name].repoconfig`: Space-separated list of globs for repository
+    configuration files that should be used with the associated
+    application configuration files in the `[name]` section.
+
+
 Running Bigitr
 --------------
 
@@ -401,7 +489,7 @@ a common argument structure.  It takes three options:
     to use instead of the file named by the `BIGITR_APP_CONFIG`
     environment variable or `~/.bigitr`.
 
-*   `-c` or `--config`": Specify a repository configuration file
+*   `-c` or `--config`: Specify a repository configuration file
     to use instead of the file named by the `BIGITR_REPO_CONFIG`
     environment variable or `~/.bigitr-repository`.
 
@@ -455,6 +543,41 @@ to specify all branches in that repository.
     specified, all configured cascading merges will be performed.
 
 
+Running Bigitrd
+---------------
+
+The `bigitrd` program takes only a few options, and does not have
+subcommands.
+
+*   `-h` or `--help`: Print a help summary
+
+*   `-c` or `--config`: Specify a bigitrd configuration file
+    to use instead of the file named by the `BIGITR_DAEMON_CONFIG`
+    environment variable or `~/.bigitrd`.
+
+*   `-n` or `--nodaemon` or `--no-daemon`: Do not detach from
+    the shell when run; stay as a foreground process.
+
+*   `-p` or `--pidfiles` or `--pid-file`: Specify the name of the
+    file in which bigitrd will store its pid instead of the file
+    named by the `BIGITR_DAEMON_PIDFILE` environment variable or
+    `~/.bigitrd-pid`.  Note that the same files with the suffix
+    `.lock` (e.g. `~/.bigitrd-pid.lock`) will also be created, as
+    will other lock files in the same directory.
+
+Bigitrd responds to the `SIGHUP` signal by waiting until any current
+conversions are finished, and then re-execing itself with the same
+configuration with which it was originally invoked, which causes the
+configuration to be re-read.  Note that `SIGHUP` is not required for
+bigitrd to close log files, as the log files for each repository are
+closed as soon as each synchronization cycle is finished.  After it
+reinvokes itself, it will do a full synchronization cycle rather
+than polling Git for updates.
+
+Bigitrd responds to the SIGTERM signal by waiting until any current
+conversions are finished, and then exiting gracefully.
+
+
 Requirements
 ============
 
@@ -486,7 +609,9 @@ Bigitr requires nose (may be packaged as python-nose), coverage
 (may be packaged as python-coverage), and mock (may be packaged as
 python-mock).  If your version of python does not include argparse,
 you will need the externally-packaged argparse (may be packaged as
-python-argparse) as well.
+python-argparse) as well.  The bigitrd daemon requires daemon (may
+be packaged as python-daemon) and lockfile (may be packaged as
+python-lockfile) as well.
 
 The documentation is maintained in markdown.
 

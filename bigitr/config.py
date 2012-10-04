@@ -48,6 +48,28 @@ class Config(ConfigParser.SafeConfigParser):
         t = string.Template(v)
         return t.substitute(os.environ)
 
+    def getGlobalFallback(self, section, key, error=True, defaultValue=None):
+        'used only for config file types with a GLOBAL default section'
+        if self.has_option(section, key):
+            return self.get(section, key)
+        if self.has_option('GLOBAL', key):
+            return self.get('GLOBAL', key)
+        if not error:
+            return defaultValue
+        # raise contextually meaningful NoOptionError using self.get
+        self.get(section, key)
+
+    def getDefault(self, section, key, defaultValue):
+        if self.has_option(section, key):
+            return self.get(section, key)
+        return defaultValue
+
+    def getGlobalDefault(self, section, key, defaultValue):
+        return self.getGlobalFallback(section, key, error=False, defaultValue=defaultValue)
+
+    def getOptional(self, section, key):
+        return self.getDefault(section, key, None)
+
     def items(self, *args, **kwargs):
         # cannot use the "var" argument because it adds a keyword for
         # each environment variable, so we have to restrict it to the

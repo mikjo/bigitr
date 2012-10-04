@@ -32,10 +32,20 @@ class _Runner(object):
         self.config = config
         self.repos = repos
         self.ctx = self.getContext()
+        self._init_runner()
 
     def getContext(self):
-        return context.Context(self.fileName(self.appconfig),
-                               self.fileName(self.config))
+        appconfig = self.expandFilenameIfString(self.appconfig)
+        config = self.expandFilenameIfString(self.config)
+        return context.Context(appconfig, config)
+
+    def _init_runner(self):
+        raise NotImplementedError
+
+    def expandFilenameIfString(self, stringish):
+        if isinstance(stringish, str):
+            return self.fileName(stringish)
+        return stringish
 
     def fileName(self, name):
         return os.path.abspath(os.path.expandvars(os.path.expanduser(name)))
@@ -52,52 +62,72 @@ class _Runner(object):
         except KeyError, e:
             raise KeyError('repository %s not found' %e.args[0])
 
-    def run(self):
-        raise NotImplementedError
-
-    def process(self, c, f):
+    def process(self):
         for repository, branch in self.getBranchMaps():
             Git = git.Git(self.ctx, repository)
             try:
                 if not branch:
                     # empty branch is unspecified
                     branch = None
-                f(repository, Git, requestedBranch=branch)
+                self.do(repository, Git, requestedBranch=branch)
             except shell.ErrorExitCode, e:
                 # report errors from commands that fail
                 Git.log.mailLastOutput(str(e))
-                c.err.report(repository)
+                self.runner.err.report(repository)
             except:
-                c.err.report(repository)
+                self.runner.err.report(repository)
 
     def close(self):
         for l in self.ctx.logs.values():
             l.close()
 
-class Synchronize(_Runner):
     def run(self):
-        s = sync.Synchronizer(self.ctx)
-        # Synchronize ignores branch specifications
-        self.process(s, lambda x, y, **z: s.synchronize(x, y))
+        self.process()
         self.close()
+
+class Synchronize(_Runner):
+    def __init__(self, appconfig, config, repos, poll=False):
+        _Runner.__init__(self, appconfig, config, repos)
+        self.poll = poll
+
+    def run(self, poll=None):
+        if poll is not None:
+            self.poll = poll
+        _Runner.run(self)
+
+    def do(self, repo, Git, requestedBranch=None):
+        # Synchronize ignores branch specifications
+        if self.poll:
+            if not self.newContent(Git):
+                return
+        self.runner.synchronize(repo, Git)
+
+    def newContent(self, Git):
+        if not os.path.exists(Git.path):
+            return True
+        oldRefs = Git.refs()
+        Git.fetch
+        if Git.refs() == oldRefs:
+            return False
+        return True
+
+    def _init_runner(self, *args):
+        self.runner = sync.Synchronizer(self.ctx)
 
 class Import(_Runner):
-    def run(self):
-        i = cvsimport.Importer(self.ctx)
-        self.process(i, i.importBranches)
-        self.close()
+    def _init_runner(self, *args):
+        self.runner = cvsimport.Importer(self.ctx)
+        self.do = self.runner.importBranches
 
 class Export(_Runner):
-    def run(self):
-        e = gitexport.Exporter(self.ctx)
-        self.process(e, e.exportBranches)
-        self.close()
+    def _init_runner(self, *args):
+        self.runner = gitexport.Exporter(self.ctx)
+        self.do = self.runner.exportBranches
 
 class Merge(_Runner):
-    def run(self):
-        m = gitmerge.Merger(self.ctx)
-        self.process(m, m.mergeBranches)
-        self.close()
+    def _init_runner(self, *args):
+        self.runner = gitmerge.Merger(self.ctx)
+        self.do = self.runner.mergeBranches
 
 
 def main(argv):

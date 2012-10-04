@@ -46,7 +46,8 @@ class TestRunner(testutils.TestCase):
         else:
             os.environ['HOME'] = self.home
 
-    def test_runner(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_runner(self, IR):
         with mock.patch('bigitr.context.Context') as C:
             r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', ['repo1', 'repo2'])
             C.assert_called_once_with('/hm/.bigitr', '/foo/repoconf')
@@ -55,13 +56,30 @@ class TestRunner(testutils.TestCase):
             self.assertEqual(r.repos, ['repo1', 'repo2'])
             self.assertEqual(r.ctx, C('/hm/.bigitr', '/foo/repoconf'))
 
-    def test_getContext(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_getContext(self, IR):
         with mock.patch('bigitr.context.Context') as C:
             with mock.patch('bigitr._Runner.fileName') as F:
                 r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
                 C.assert_called_once_with(F(), F())
 
-    def test_getBranchMapsWithDefault(self):
+    @mock.patch('bigitr._Runner.__init__')
+    def test_unimplementedInitRunner(self, I):
+        I.return_value = None
+        r = bigitr._Runner(mock.Mock())
+        self.assertRaises(NotImplementedError, r._init_runner)
+
+    @mock.patch('bigitr._Runner.fileName')
+    @mock.patch('bigitr._Runner._init_runner')
+    @mock.patch('bigitr._Runner.__init__')
+    def test_expandFilenameIfString(self, I, IR, F):
+        I.return_value = None
+        r = bigitr._Runner(mock.Mock())
+        self.assertEqual(1, r.expandFilenameIfString(1))
+        self.assertTrue(isinstance(r.expandFilenameIfString('b'), mock.Mock))
+
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_getBranchMapsWithDefault(self, IR):
         with mock.patch('bigitr._Runner.getContext') as C:
             r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
             r.ctx.getRepositories.return_value = ['foo']
@@ -70,7 +88,8 @@ class TestRunner(testutils.TestCase):
             self.assertEqual(l, [['foo', None]])
             r.ctx.getRepositories.assert_called_once_with()
 
-    def test_getBranchMapsWithName(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_getBranchMapsWithName(self, IR):
         with mock.patch('bigitr._Runner.getContext') as C:
             r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', ['foo'])
             r.ctx.getRepositoryByName.return_value = '/foo'
@@ -78,7 +97,8 @@ class TestRunner(testutils.TestCase):
             self.assertEqual(l, [['/foo', None]])
             r.ctx.getRepositoryByName.assert_called_once_with('foo')
 
-    def test_getBranchMapsWithBadName(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_getBranchMapsWithBadName(self, IR):
         with mock.patch('bigitr._Runner.getContext') as C:
             r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', ['dne'])
             r.ctx.getRepositoryByName.side_effect = lambda x: {}[x]
@@ -86,7 +106,8 @@ class TestRunner(testutils.TestCase):
             r.ctx.getRepositoryByName.assert_called_once_with('dne')
 
 
-    def test_getBranchMapsWithBranches(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_getBranchMapsWithBranches(self, IR):
         with mock.patch('bigitr._Runner.getContext') as C:
             r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf',
                                ['repo::b1', 'repo2::b2', 'repo::3::'])
@@ -99,12 +120,6 @@ class TestRunner(testutils.TestCase):
                 mock.call('repo2'),
                 mock.call('repo::3')])
 
-    def test_unimplementedRun(self):
-        with mock.patch('bigitr._Runner.__init__') as I:
-            I.return_value = None
-            r = bigitr._Runner(mock.Mock())
-            self.assertRaises(NotImplementedError, r.run)
-
     def runProcessWithSideEffect(self, side_effect=None):
         with mock.patch('bigitr.git.Git') as G:
             with mock.patch('bigitr._Runner.__init__') as I:
@@ -113,21 +128,23 @@ class TestRunner(testutils.TestCase):
                     R.return_value = [['repo', None]]
                     r = bigitr._Runner(mock.Mock(), mock.Mock(), mock.Mock())
                     r.ctx = mock.Mock()
-                    c = mock.Mock()
-                    f = mock.Mock()
+                    r.runner = mock.Mock()
+                    r.do = mock.Mock()
                     g = G(r.ctx, 'repo')
                     if side_effect is not None:
-                        f.side_effect = side_effect
-                    r.process(c, f)
-                    f.assert_called_once_with('repo', g, requestedBranch=None)
-                    return c, g
+                        r.do.side_effect = side_effect
+                    r.process()
+                    r.do.assert_called_once_with('repo', g, requestedBranch=None)
+                    return r.runner, g
 
-    def test_process(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_process(self, IR):
         c, g = self.runProcessWithSideEffect()
         c.err.report.assert_not_called()
         g.log.mailLastOutput.assert_not_called()
 
-    def test_processShellError(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_processShellError(self, IR):
         def raiseShellError():
             raise shell.ErrorExitCode(1)
         c, g = self.runProcessWithSideEffect(lambda *x, **z: raiseShellError())
@@ -135,78 +152,153 @@ class TestRunner(testutils.TestCase):
         g.log.mailLastOutput.assert_called_once_with(mock.ANY)
 
 
-    def test_processOtherError(self):
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_processOtherError(self, IR):
         c, g = self.runProcessWithSideEffect(lambda *x, **z: {}[1])
         c.err.report.assert_called_once_with('repo')
         g.log.mailLastOutput.assert_not_called()
 
 
-    def test_close(self):
-        with mock.patch('bigitr._Runner.getContext') as C:
-            r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
-            l = mock.Mock()
-            r.ctx.logs.values.return_value = [l]
-            r.close()
-            l.close.assert_called_once_with()
+    @mock.patch('bigitr._Runner.getContext')
+    @mock.patch('bigitr._Runner._init_runner')
+    def test_close(self, IR, C):
+        r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
+        l = mock.Mock()
+        r.ctx.logs.values.return_value = [l]
+        r.close()
+        l.close.assert_called_once_with()
 
+
+@mock.patch('bigitr.sync.Synchronizer')
+@mock.patch('bigitr._Runner.__init__')
+@mock.patch('bigitr.git.Git')
 class TestSynchronize(testutils.TestCase):
-    def test_run(self):
-        with mock.patch('bigitr._Runner.__init__') as R:
-            R.return_value = None
-            with mock.patch('bigitr.sync.Synchronizer') as S:
-                s = bigitr.Synchronize(mock.Mock())
-                s.ctx = mock.Mock()
-                s.process = mock.Mock()
-                s.close = mock.Mock()
-                s.run()
-                S.assert_called_once_with(s.ctx)
-                s.process.assert_called_once_with(S(), mock.ANY) # lambda
-                s.close.assert_called_once_with()
+    def test_run(self, G, R, S):
+        R.return_value = None
+        s = bigitr.Synchronize('a', 'c', 'r')
+        self.assertEquals(s.poll, False)
+        s.ctx = mock.Mock()
+        s.repos = ['foo::bar']
+        s.close = mock.Mock()
+        s._init_runner()
+        s.run()
+        S.assert_called_once_with(s.ctx)
+        S().synchronize.assert_called_once_with(mock.ANY, mock.ANY)
+        s.close.assert_called_once_with()
+
+    def test_runPollNew(self, G, R, S):
+        R.return_value = None
+        s = bigitr.Synchronize('a', 'c', 'r', poll=True)
+        self.assertEquals(s.poll, True)
+        s.ctx = mock.Mock()
+        s.repos = ['foo::bar']
+        s.close = mock.Mock()
+        s._init_runner()
+        G().path = '/does/not/exist/I/certainly/hope...'
+        s.run()
+        S.assert_called_once_with(s.ctx)
+        S().synchronize.assert_called_once_with(mock.ANY, mock.ANY)
+        s.close.assert_called_once_with()
+
+    def test_runPollNoChange(self, G, R, S):
+        R.return_value = None
+        s = bigitr.Synchronize('a', 'c', 'r', poll=True)
+        self.assertEquals(s.poll, True)
+        s.ctx = mock.Mock()
+        s.repos = ['foo::bar']
+        s.close = mock.Mock()
+        s._init_runner()
+        G().path = '/tmp'
+        G().refs.side_effect = [set(('1', '2')), set(('1', '2'))]
+        s.run()
+        S.assert_called_once_with(s.ctx)
+        S().synchronize.assert_not_called()
+        s.close.assert_called_once_with()
+
+    def test_runPollNoChangeWithNewDefault(self, G, R, S):
+        R.return_value = None
+        s = bigitr.Synchronize('a', 'c', 'r', poll=False)
+        self.assertEquals(s.poll, False)
+        s.ctx = mock.Mock()
+        s.repos = ['foo::bar']
+        s.close = mock.Mock()
+        s._init_runner()
+        G().path = '/tmp'
+        G().refs.side_effect = [set(('1', '2')), set(('1', '2'))]
+        s.run(poll=True)
+        self.assertEquals(s.poll, True)
+        S.assert_called_once_with(s.ctx)
+        S().synchronize.assert_not_called()
+        s.close.assert_called_once_with()
+
+
+    def test_runPollWithChange(self, G, R, S):
+        R.return_value = None
+        s = bigitr.Synchronize('a', 'c', 'r', poll=True)
+        self.assertEquals(s.poll, True)
+        s.ctx = mock.Mock()
+        s.repos = ['foo::bar']
+        s.close = mock.Mock()
+        s._init_runner()
+        G().path = '/tmp'
+        G().refs.side_effect = [set(('1', '2')), set(('1', '3'))]
+        s.run()
+        S.assert_called_once_with(s.ctx)
+        S().synchronize.assert_called_once_with(mock.ANY, mock.ANY)
+        s.close.assert_called_once_with()
+
 
 class TestImport(testutils.TestCase):
-    def test_run(self):
-        with mock.patch('bigitr._Runner.__init__') as R:
-            R.return_value = None
-            with mock.patch('bigitr.cvsimport.Importer') as I:
-                i = bigitr.Import(mock.Mock())
-                i.ctx = mock.Mock()
-                i.process = mock.Mock()
-                i.close = mock.Mock()
-                i.run()
-                I.assert_called_once_with(i.ctx)
-                i.process.assert_called_once_with(I(), I().importBranches)
-                i.close.assert_called_once_with()
+    @mock.patch('bigitr.cvsimport.Importer')
+    @mock.patch('bigitr._Runner.__init__')
+    @mock.patch('bigitr.git.Git')
+    def test_run(self, G, R, I):
+        R.return_value = None
+        i = bigitr.Import()
+        i.ctx = mock.Mock()
+        i.repos = ['foo::bar']
+        i.close = mock.Mock()
+        i._init_runner()
+        i.run()
+        I.assert_called_once_with(i.ctx)
+        I().importBranches.assert_called_once_with(mock.ANY, mock.ANY,
+            requestedBranch='bar')
+        i.close.assert_called_once_with()
 
 
 class TestExport(testutils.TestCase):
-    def test_run(self):
-        with mock.patch('bigitr._Runner.__init__') as R:
-            R.return_value = None
-            with mock.patch('bigitr.gitexport.Exporter') as E:
-                e = bigitr.Export(mock.Mock())
-                e.ctx = mock.Mock()
-                e.process = mock.Mock()
-                e.close = mock.Mock()
-                e.run()
-                E.assert_called_once_with(e.ctx)
-                e.process.assert_called_once_with(E(), E().exportBranches)
-                e.close.assert_called_once_with()
-
+    @mock.patch('bigitr.gitexport.Exporter')
+    @mock.patch('bigitr._Runner.__init__')
+    @mock.patch('bigitr.git.Git')
+    def test_run(self, G, R, E):
+        R.return_value = None
+        e = bigitr.Export()
+        e.ctx = mock.Mock()
+        e.repos = ['foo::bar']
+        e.close = mock.Mock()
+        e._init_runner()
+        e.run()
+        E.assert_called_once_with(e.ctx)
+        E().exportBranches.assert_called_once_with(mock.ANY, mock.ANY,
+            requestedBranch='bar')
+        e.close.assert_called_once_with()
 
 class TestMerge(testutils.TestCase):
-    def test_run(self):
-        with mock.patch('bigitr._Runner.__init__') as R:
-            R.return_value = None
-            with mock.patch('bigitr.gitmerge.Merger') as M:
-                m = bigitr.Merge(mock.Mock())
-                m.ctx = mock.Mock()
-                m.process = mock.Mock()
-                m.close = mock.Mock()
-                m.run()
-                M.assert_called_once_with(m.ctx)
-                m.process.assert_called_once_with(M(), M().mergeBranches)
-                m.close.assert_called_once_with()
-
+    @mock.patch('bigitr.gitmerge.Merger')
+    @mock.patch('bigitr._Runner.__init__')
+    @mock.patch('bigitr.git.Git')
+    def test_run(self, G, R, M):
+        R.return_value = None
+        m = bigitr.Merge()
+        m.ctx = mock.Mock()
+        m.repos = ['foo::bar']
+        m.close = mock.Mock()
+        m._init_runner()
+        m.run()
+        M.assert_called_once_with(m.ctx)
+        M().mergeBranches.assert_called_once_with(mock.ANY, mock.ANY,
+            requestedBranch='bar')
+        m.close.assert_called_once_with()
 
 class TestMain(testutils.TestCase):
     def test_help(self):

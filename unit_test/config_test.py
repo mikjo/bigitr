@@ -14,6 +14,7 @@
 #  limitations under the License.
 #
 
+import ConfigParser
 import os
 from StringIO import StringIO
 import tempfile
@@ -50,6 +51,38 @@ class TestConfig(testutils.TestCase):
 
     def test_getEnv(self):
         self.assertEqual(self.cfg.get('foo', 'bar'), '/tmp')
+
+    def test_getGlobalFallbackNoGlobalSection(self):
+        self.assertEqual('/tmp', self.cfg.getGlobalFallback('foo', 'bar'))
+
+    def test_getGlobalFallbackDefaultNoGlobalSection(self):
+        self.assertEqual(None, self.cfg.getGlobalFallback('asdf', 'b', error=False))
+        self.assertEqual('def', self.cfg.getGlobalFallback('asdf', 'b', error=False, defaultValue='def'))
+
+    def test_getGlobalFallbackError(self):
+        self.assertRaises(ConfigParser.NoOptionError,
+            self.cfg.getGlobalFallback, 'foo', 'b')
+
+    def test_getGlobalFallbackGlobalSection(self):
+        self.cfg.add_section('GLOBAL')
+        self.cfg.set('GLOBAL', 'b', 'foo')
+        self.assertEqual('foo', self.cfg.getGlobalFallback('asdf', 'b'))
+
+    def test_getDefault(self):
+        self.assertEqual('/tmp', self.cfg.getDefault('foo', 'bar', 'asdf'))
+        self.assertEqual('asdf', self.cfg.getDefault('foo', 'baz', 'asdf'))
+
+    def test_getGlobalDefault(self):
+        self.assertEqual('/tmp', self.cfg.getGlobalDefault('foo', 'bar', 'asdf'))
+        self.assertEqual('asdf', self.cfg.getGlobalDefault('foo', 'baz', 'asdf'))
+        self.cfg.add_section('GLOBAL')
+        self.cfg.set('GLOBAL', 'b', 'foo')
+        self.assertEqual('foo', self.cfg.getGlobalDefault('a', 'b', 'asdf'))
+        self.assertEqual('asdf', self.cfg.getGlobalDefault('a', 'baz', 'asdf'))
+
+    def test_getOptional(self):
+        self.assertEqual('/tmp', self.cfg.getOptional('foo', 'bar'))
+        self.assertEqual(None, self.cfg.getOptional('foo', 'baz'))
 
     def test_itemsEnv(self):
         self.assertEqual(self.cfg.items('foo'), [('bar', '/tmp')])

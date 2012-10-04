@@ -26,8 +26,14 @@ from bigitr import mail
 class Context(object):
     def __init__(self, appConfig, repoConfig):
         # cannot be a mixin because shared base class collides
-        self._ac = appconfig.AppConfig(appConfig)
-        self._rm = repositorymap.RepositoryConfig(repoConfig)
+        if isinstance(appConfig, appconfig.AppConfig):
+            self._ac = appConfig
+        else:
+            self._ac = appconfig.AppConfig(appConfig)
+        if isinstance(repoConfig, repositorymap.RepositoryConfig):
+            self._rm = repoConfig
+        else:
+            self._rm = repositorymap.RepositoryConfig(repoConfig)
         self.logs = log.LogCache(self)
         self.mails = mail.MailCache(self)
     

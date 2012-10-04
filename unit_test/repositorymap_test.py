@@ -73,14 +73,14 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
         os.remove(self.cf)
         os.remove(self.bad)
 
-    def test_getDefault(self):
-        self.assertEqual(self.cfg.getDefault('Path/To/Git/repository', 'gitroot'),
+    def test_getGlobalFallback(self):
+        self.assertEqual(self.cfg.getGlobalFallback('Path/To/Git/repository', 'gitroot'),
                          'git@host')
-        self.assertEqual(self.cfg.getDefault('Path/To/Git/repo2', 'gitroot'),
+        self.assertEqual(self.cfg.getGlobalFallback('Path/To/Git/repo2', 'gitroot'),
                          'git@host2')
         self.assertRaises(ConfigParser.NoOptionError,
-                          self.cfg.getDefault, 'Path/To/Git/repo2', 'asdf')
-        self.assertEqual(self.cfg.getDefault('Path/To/Git/repo2', 'asdf', error=False), None)
+                          self.cfg.getGlobalFallback, 'Path/To/Git/repo2', 'asdf')
+        self.assertEqual(self.cfg.getGlobalFallback('Path/To/Git/repo2', 'asdf', error=False), None)
 
     def test_getRepositories(self):
         self.assertEqual(self.cfg.getRepositories(),
@@ -215,17 +215,42 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
         self.assertEqual(self.cfg.getEmail('Path/To/Git/repository'),
                          ['foo@bar', 'baz@blah'])
 
-    def test_getEmailDefault(self):
-        cfg = repositorymap.RepositoryConfig(StringIO('''
+    def globalEmailConfig(self):
+        self.cfg = repositorymap.RepositoryConfig(StringIO('''
 [GLOBAL]
 email = foo@bar
 [repo]
         '''))
-        self.assertEqual(cfg.getEmail('repo'), ['foo@bar'])
+
+    def test_getEmailDefault(self):
+        self.globalEmailConfig()
+        self.assertEqual(self.cfg.getEmail('repo'), ['foo@bar'])
 
     def test_getEmailNone(self):
         self.assertEqual(self.cfg.getEmail('Path/To/Git/repo2'),
                          None)
+
+    def test_addEmailEmptyEmpty(self):
+        self.assertEqual(None, self.cfg.getEmail('Path/To/Git/repo2'))
+        self.cfg.addEmail('Path/To/Git/repo2', [])
+        self.assertEqual(None, self.cfg.getEmail('Path/To/Git/repo2'))
+
+    def test_addEmailEmptyFull(self):
+        self.globalEmailConfig()
+        self.assertEqual(['foo@bar'], self.cfg.getEmail('repo'))
+        self.cfg.addEmail('repo', [])
+        self.assertEqual(['foo@bar'], self.cfg.getEmail('repo'))
+
+    def test_addEmailToEmpty(self):
+        self.assertEqual(None, self.cfg.getEmail('Path/To/Git/repo2'))
+        self.cfg.addEmail('Path/To/Git/repo2', ['blah@baz'])
+        self.assertEqual(['blah@baz'], self.cfg.getEmail('Path/To/Git/repo2'))
+
+    def test_addEmailEmptyFull(self):
+        self.globalEmailConfig()
+        self.assertEqual(['foo@bar'], self.cfg.getEmail('repo'))
+        self.cfg.addEmail('repo', ['a@b', 'c@d'])
+        self.assertEqual(['foo@bar', 'a@b', 'c@d'], self.cfg.getEmail('repo'))
 
     def test_duplicateRepositoryNameError(self):
         self.assertRaises(KeyError, repositorymap.RepositoryConfig, self.bad)
