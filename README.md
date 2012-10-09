@@ -140,13 +140,15 @@ immediately, though additional repositories will still be processed.
 Configuration
 -------------
 
-There are two kinds of configuration files.
+There are three kinds of bigitr configuration files.
 
 * Application configuration: general behavior
 
 * Repository configuration: specific to a Git repository
 
-Both of these kinds of configuration files use "ini" syntax.
+* Daemon configuration: behavior of the bigitrd daemon
+
+Each of these kinds of configuration files use "ini" syntax.
 This is intentionally similar to Git configuration.  Any syntax
 differences are due to using the Python ConfigFile parser to
 implement the configuration file handling.
