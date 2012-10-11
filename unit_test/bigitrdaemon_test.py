@@ -315,6 +315,15 @@ class TestMain(testutils.TestCase):
         D.assert_called_once_with('/foo', '/b', False, '/b-p')
         D().run.assert_called_once_with()
 
+    def test_ArgsEmpty(self, D):
+        bigitrdaemon.main(['/foo'])
+        D.assert_called_once_with('/foo', '~/.bigitrd', True, '~/.bigitrd-pid')
+
+    @mock.patch('sys.stdout')
+    def test_ArgsHelp(self, D, o):
+        self.assertRaises(SystemExit, bigitrdaemon.main, ['/foo', '--help'])
+        D.assert_not_called()
+
     def test_Args(self, D):
         bigitrdaemon.main(['/foo', '--config', '/b', '--nodaemon', '--pidfile', '/b-p'])
         self.assertNonDefaultArgs(D)

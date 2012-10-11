@@ -167,7 +167,7 @@ def main(argv):
     ap.add_argument('--nodaemon', '--no-daemon', '-n', action='store_true',
                     help='run in the foreground')
     ap.add_argument('--pidfile', '--pid-file', '-p', default=daemonPidFile,
-                    help='daemon pid file path [%s] %daemonPidFile')
+                    help='daemon pid file path [%s]' %daemonPidFile)
 
     args = ap.parse_args(argv[1:])
 
