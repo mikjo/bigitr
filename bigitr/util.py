@@ -59,3 +59,6 @@ def saveDir(fn):
         finally:
             os.chdir(oldDir)
     return wrapper
+
+def fileName(name):
+    return os.path.abspath(os.path.expandvars(os.path.expanduser(name)))

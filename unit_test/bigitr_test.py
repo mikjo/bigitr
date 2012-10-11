@@ -59,7 +59,7 @@ class TestRunner(testutils.TestCase):
     @mock.patch('bigitr._Runner._init_runner')
     def test_getContext(self, IR):
         with mock.patch('bigitr.context.Context') as C:
-            with mock.patch('bigitr._Runner.fileName') as F:
+            with mock.patch('bigitr.util.fileName') as F:
                 r = bigitr._Runner('~/.bigitr', '${FOO}/repoconf', [])
                 C.assert_called_once_with(F(), F())
 
@@ -69,7 +69,7 @@ class TestRunner(testutils.TestCase):
         r = bigitr._Runner(mock.Mock())
         self.assertRaises(NotImplementedError, r._init_runner)
 
-    @mock.patch('bigitr._Runner.fileName')
+    @mock.patch('bigitr.util.fileName')
     @mock.patch('bigitr._Runner._init_runner')
     @mock.patch('bigitr._Runner.__init__')
     def test_expandFilenameIfString(self, I, IR, F):

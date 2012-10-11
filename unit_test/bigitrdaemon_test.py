@@ -72,7 +72,7 @@ repoconfig = ${DDIR}/bar
 
     @mock.patch('bigitr.bigitrdaemon.Daemon.createContext')
     def test_init(self, cC):
-        d = bigitrdaemon.Daemon('/foo', self.daemonConfig, False, self.pidFile)
+        d = bigitrdaemon.Daemon('/foo', self.daemonConfig, False, '${DDIR}/pid')
         self.assertFalse(os.path.exists(self.pidFile))
         self.assertEquals(d.execPath, '/foo')
         self.assertEquals(d.config, self.daemonConfig)

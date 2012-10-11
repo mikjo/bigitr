@@ -66,3 +66,10 @@ class TestUtil(testutils.TestCase):
     def test_listFiles(self):
         self.assertEqual(sorted(util.listFiles(self.s)),
                          ['a', 'b', 'dir/metoo'])
+
+    def test_fileName(self):
+        try:
+            os.environ['FOO'] = 'bar'
+            self.assertEqual(util.fileName('~/${FOO}'), os.environ['HOME']+'/bar')
+        finally:
+            os.unsetenv('FOO')

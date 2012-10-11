@@ -30,13 +30,14 @@ from bigitr import appconfig
 from bigitr import daemonconfig
 from bigitr import repositorymap
 from bigitr import Synchronize
+from bigitr import util
 
 class Daemon(object):
     def __init__(self, execPath, config, detach, pidfile):
         self.execPath = execPath
-        self.config = config
+        self.config = util.fileName(config)
         self.cfg = daemonconfig.DaemonConfig(config)
-        self.pidfile = pidfile
+        self.pidfile = util.fileName(pidfile)
         self.restart = False
         self.stop = False
         self.createContext(detach)

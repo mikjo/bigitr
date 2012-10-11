@@ -25,6 +25,7 @@ from bigitr import gitexport
 from bigitr import gitmerge
 from bigitr import shell
 from bigitr import sync
+from bigitr import util
 
 class _Runner(object):
     def __init__(self, appconfig, config, repos):
@@ -44,11 +45,8 @@ class _Runner(object):
 
     def expandFilenameIfString(self, stringish):
         if isinstance(stringish, str):
-            return self.fileName(stringish)
+            return util.fileName(stringish)
         return stringish
-
-    def fileName(self, name):
-        return os.path.abspath(os.path.expandvars(os.path.expanduser(name)))
 
     def getBranchMaps(self):
         repolist = self.repos
