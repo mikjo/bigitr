@@ -180,7 +180,7 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
         with mock.patch('bigitr.git.shell.run'):
             self.git.checkoutTracking('b')
             shell.run.assert_called_once_with(mock.ANY,
-                'git', 'checkout', '--track', 'origin/b')
+                'git', 'checkout', '-f', '--track', 'origin/b')
 
     def test_checkoutNewImportBranch(self):
         with mock.patch('bigitr.git.shell.run'):

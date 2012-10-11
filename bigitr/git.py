@@ -77,7 +77,7 @@ class Git(object):
         
     def checkoutTracking(self, branch):
         shell.run(self.log,
-            'git', 'checkout', '--track', 'origin/'+branch)
+            'git', 'checkout', '-f', '--track', 'origin/'+branch)
 
     def checkoutNewImportBranch(self, branch):
         shell.run(self.log, 'git', 'checkout', '--orphan', branch)
