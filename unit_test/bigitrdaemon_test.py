@@ -108,6 +108,7 @@ repoconfig = ${DDIR}/bar
         self.assertEqual(len(d.synchronizers), 4)
         for s in d.synchronizers:
             self.assertTrue(isinstance(s, Synchronize))
+            self.assertTrue(isinstance(s.repos, list))
             for repo in s.ctx.getRepositories():
                 email = s.ctx.getEmail(repo)
                 if email is not None:

@@ -69,7 +69,7 @@ class Daemon(object):
                 for repo in repoCtx.getRepositories():
                     repoCtx.addEmail(repo, addMail)
                     self.synchronizers.append(
-                        Synchronize(appCtx, repoCtx, repo))
+                        Synchronize(appCtx, repoCtx, [repo]))
 
     def run(self):
         with self.context:
