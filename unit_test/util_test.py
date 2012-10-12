@@ -67,6 +67,23 @@ class TestUtil(testutils.TestCase):
         self.assertEqual(sorted(util.listFiles(self.s)),
                          ['a', 'b', 'dir/metoo'])
 
+    def test_saveDir(self):
+        O = object()
+        @util.saveDir
+        def inner(foo):
+            return O
+        with mock.patch('os.chdir') as C:
+            self.assertEquals(inner(1), O)
+            C.assert_has_call(os.getcwd())
+
+    def test_saveDirException(self):
+        @util.saveDir
+        def inner(foo):
+            [][0]
+        with mock.patch('os.chdir') as C:
+            self.assertRaises(IndexError, inner, 1)
+            C.assert_has_call(os.getcwd())
+
     def test_fileName(self):
         try:
             os.environ['FOO'] = 'bar'

@@ -100,11 +100,16 @@ class Synchronize(_Runner):
                 return
         self.runner.synchronize(repo, Git)
 
+    @util.saveDir
     def newContent(self, Git):
-        if not os.path.exists(Git.path):
+        gitPath = self.ctx.getGitDir()
+        repoName = self.ctx.getRepositoryName(Git.repo)
+        repoDir = '/'.join((gitPath, repoName))
+        if not os.path.exists(repoDir):
             return True
+        os.chdir(repoDir)
         oldRefs = Git.refs()
-        Git.fetch
+        Git.fetch()
         if Git.refs() == oldRefs:
             return False
         return True

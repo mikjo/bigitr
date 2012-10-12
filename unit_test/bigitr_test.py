@@ -186,63 +186,101 @@ class TestSynchronize(testutils.TestCase):
         S().synchronize.assert_called_once_with(mock.ANY, mock.ANY)
         s.close.assert_called_once_with()
 
-    def test_runPollNew(self, G, R, S):
+    @mock.patch('os.chdir')
+    def test_runPollNew(self, C, G, R, S):
         R.return_value = None
         s = bigitr.Synchronize('a', 'c', 'r', poll=True)
         self.assertEquals(s.poll, True)
         s.ctx = mock.Mock()
+        s.ctx.getGitDir.return_value = '/imp'
         s.repos = ['foo::bar']
+        G().repo = 'foo'
+        s.ctx.getRepositoryName.return_value = 'foo'
         s.close = mock.Mock()
         s._init_runner()
-        G().path = '/does/not/exist/I/certainly/hope...'
-        s.run()
+        with mock.patch('os.path.exists') as E:
+            E.return_value = False
+            s.run()
+            E.assert_has_call('/imp/foo')
+        C.assert_called_once_with(os.getcwd())
+        G().refs.assert_not_called()
+        G().fetch.assert_not_called()
         S.assert_called_once_with(s.ctx)
         S().synchronize.assert_called_once_with(mock.ANY, mock.ANY)
         s.close.assert_called_once_with()
 
-    def test_runPollNoChange(self, G, R, S):
+    @mock.patch('os.chdir')
+    def test_runPollNoChange(self, C, G, R, S):
         R.return_value = None
         s = bigitr.Synchronize('a', 'c', 'r', poll=True)
         self.assertEquals(s.poll, True)
         s.ctx = mock.Mock()
+        s.ctx.getGitDir.return_value = '/imp'
         s.repos = ['foo::bar']
+        G().repo = 'foo'
+        s.ctx.getRepositoryName.return_value = 'foo'
         s.close = mock.Mock()
         s._init_runner()
-        G().path = '/tmp'
         G().refs.side_effect = [set(('1', '2')), set(('1', '2'))]
-        s.run()
+        with mock.patch('os.path.exists') as E:
+            s.run()
+            E.assert_has_call('/imp/foo')
+        C.assert_has_calls(
+            [mock.call('/imp/foo'),
+             mock.call(os.getcwd())])
+        self.assertEqual(C.call_count, 2)
+        G().fetch.assert_called_once_with()
         S.assert_called_once_with(s.ctx)
         S().synchronize.assert_not_called()
         s.close.assert_called_once_with()
 
-    def test_runPollNoChangeWithNewDefault(self, G, R, S):
+    @mock.patch('os.chdir')
+    def test_runPollNoChangeWithNewDefault(self, C, G, R, S):
         R.return_value = None
         s = bigitr.Synchronize('a', 'c', 'r', poll=False)
         self.assertEquals(s.poll, False)
         s.ctx = mock.Mock()
+        s.ctx.getGitDir.return_value = '/imp'
         s.repos = ['foo::bar']
+        G().repo = 'foo'
+        s.ctx.getRepositoryName.return_value = 'foo'
         s.close = mock.Mock()
         s._init_runner()
-        G().path = '/tmp'
         G().refs.side_effect = [set(('1', '2')), set(('1', '2'))]
-        s.run(poll=True)
-        self.assertEquals(s.poll, True)
+        with mock.patch('os.path.exists') as E:
+            s.run(poll=True)
+            E.assert_has_call('/imp/foo')
+        C.assert_has_calls(
+            [mock.call('/imp/foo'),
+             mock.call(os.getcwd())])
+        self.assertEqual(C.call_count, 2)
+        G().fetch.assert_called_once_with()
         S.assert_called_once_with(s.ctx)
         S().synchronize.assert_not_called()
         s.close.assert_called_once_with()
 
 
-    def test_runPollWithChange(self, G, R, S):
+    @mock.patch('os.chdir')
+    def test_runPollWithChange(self, C, G, R, S):
         R.return_value = None
         s = bigitr.Synchronize('a', 'c', 'r', poll=True)
         self.assertEquals(s.poll, True)
         s.ctx = mock.Mock()
+        s.ctx.getGitDir.return_value = '/imp'
         s.repos = ['foo::bar']
+        G().repo = 'foo'
+        s.ctx.getRepositoryName.return_value = 'foo'
         s.close = mock.Mock()
         s._init_runner()
-        G().path = '/tmp'
         G().refs.side_effect = [set(('1', '2')), set(('1', '3'))]
-        s.run()
+        with mock.patch('os.path.exists') as E:
+            s.run()
+            E.assert_has_call('/imp/foo')
+        C.assert_has_calls(
+            [mock.call('/imp/foo'),
+             mock.call(os.getcwd())])
+        self.assertEqual(C.call_count, 2)
+        G().fetch.assert_called_once_with()
         S.assert_called_once_with(s.ctx)
         S().synchronize.assert_called_once_with(mock.ANY, mock.ANY)
         s.close.assert_called_once_with()

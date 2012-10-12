@@ -55,9 +55,12 @@ def saveDir(fn):
     def wrapper(self, *args, **kwargs):
         oldDir = os.getcwd()
         try:
-            fn(self, *args, **kwargs)
+            ret = fn(self, *args, **kwargs)
+        except Exception:
+            raise
         finally:
             os.chdir(oldDir)
+        return ret
     return wrapper
 
 def fileName(name):
