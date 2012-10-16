@@ -77,7 +77,7 @@ class DaemonConfig(config.Config):
         repoConfig = []
         for repoGlob in self.getGlobalFallback(section, 'repoconfig').split():
             repoConfig.extend(glob.glob(repoGlob))
-        return repoConfig
+        return sorted(repoConfig)
 
     def _parseTimeSpec(self, timespec):
         times = self.timeRE.search(timespec).groupdict()
