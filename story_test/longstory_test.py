@@ -17,7 +17,9 @@
 from cStringIO import StringIO
 import mock
 import os
+import signal
 import tempfile
+import time
 import unittest
 
 import bigitr
@@ -104,6 +106,8 @@ class WorkDir(unittest.TestCase):
                 os.environ[key] = value
             else:
                 os.unsetenv(key)
+                if key in os.environ:
+                    del os.environ[key]
 
     def savevar(self, var):
         if var in os.environ:
@@ -969,7 +973,9 @@ class TestStoryCommands(WorkDir):
     def setUp(self):
         WorkDir.setUp(self)
         self.bindir = os.path.dirname(os.path.dirname(__file__)) + '/bin'
+        self.sbindir = os.path.dirname(os.path.dirname(__file__)) + '/sbin'
         self.exe = self.bindir + '/bigitr'
+        self.daemon = self.sbindir + '/bigitrd'
         self.cfgdir = self.workdir + '/cfg'
         os.makedirs(self.cfgdir)
         self.appCfgname = self.cfgdir + '/appcfg'
@@ -978,6 +984,10 @@ class TestStoryCommands(WorkDir):
         self.repCfgname = self.cfgdir + '/repcfg'
         file(self.repCfgname, 'w').write(self.repConfigText)
         self.setenv('BIGITR_REPO_CONFIG', self.repCfgname)
+        self.daemonCfgname = self.cfgdir + '/daemon'
+        self.setenv('BIGITR_DAEMON_CONFIG', self.daemonCfgname)
+        self.pidfile = self.workdir + '/bigitr-pid'
+        self.setenv('BIGITR_DAEMON_PIDFILE', self.pidfile)
 
     def invoke(self, *args):
         self.assertRaises(SystemExit, bigitr.main, args)
@@ -1179,3 +1189,63 @@ class TestStoryCommands(WorkDir):
 
         os.system('%s help' % self.exe)
         self.assertNoTracebackLogs()
+
+        # invoke the daemon
+
+        file(self.daemonCfgname, 'w').write('\n'.join((
+            '[GLOBAL]',
+            'pollfrequency = 1s',
+            'syncfrequency = 1d',
+            'appconfig = ' + self.appCfgname,
+            '[test]',
+            'repoconfig = ' + self.repCfgname,
+            ''
+            ))
+        )
+
+        try:
+            os.system(self.daemon)
+            while (not (os.path.exists(self.pidfile) and os.lstat(self.pidfile).st_size)):
+                time.sleep(0.01)
+            self.assertNoTracebackLogs()
+            pid = int(file(self.pidfile).read().strip())
+
+            os.system('cd %s/module1; '
+                      'git checkout master; '
+                      'git pull; '
+                      'echo content > daemon-synced-file; '
+                      'git add daemon-synced-file; '
+                      'git commit -a -m "add daemon-synced-file"; '
+                      'git push; '
+                      %self.gitco)
+            while (not os.path.exists(self.cvsroot+'/module1/Attic/daemon-synced-file,v')):
+                time.sleep(0.02)
+            self.assertNoTracebackLogs()
+
+            # wait for cvs lock to go away (it will anyway, but waiting is faster usually)
+            time.sleep(1.0)
+
+            os.system('cd %s; CVSROOT=%s cvs co -r b2 module1'
+                      %(self.cvsco, self.cvsroot))
+            file(self.cvsco + '/module1/daemon-synced-cvs-file', 'w').write('foo\n')
+            os.system('cd %s/module1; '
+                      'cvs add daemon-synced-cvs-file; '
+                      'cvs commit -m "add daemon-synced-cvs-file"'
+                      %self.cvsco)
+
+            # HUP will cause a full sync
+            os.kill(pid, signal.SIGHUP)
+
+            while (not os.path.exists(self.gitco+'/module1/daemon-synced-cvs-file')):
+                time.sleep(0.02)
+                os.system('cd %s/module1; '
+                          'git pull; '
+                          %self.gitco)
+            self.assertNoTracebackLogs()
+
+        finally:
+            pid = int(file(self.pidfile).read().strip())
+            os.kill(pid, signal.SIGTERM)
+            while (os.path.exists(self.pidfile) and util.kill(pid, 0)):
+                time.sleep(0.01)
+            self.assertNoTracebackLogs()

@@ -90,3 +90,9 @@ class TestUtil(testutils.TestCase):
             self.assertEqual(util.fileName('~/${FOO}'), os.environ['HOME']+'/bar')
         finally:
             os.unsetenv('FOO')
+
+    def test_killExists(self):
+        self.assertTrue(util.kill(os.getpid(), 0))
+
+    def test_killDoesNotExist(self):
+        self.assertFalse(util.kill(123456789, 0)) # 32K is max pid

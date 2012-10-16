@@ -28,6 +28,7 @@ import traceback
 
 from bigitr import appconfig
 from bigitr import daemonconfig
+from bigitr import progress
 from bigitr import repositorymap
 from bigitr import Synchronize
 from bigitr import util
@@ -40,6 +41,10 @@ class Daemon(object):
         self.pidfile = util.fileName(pidfile)
         self.restart = False
         self.stop = False
+        if detach:
+            self.progress = progress.Progress(outFile=None)
+        else:
+            self.progress = progress.Progress()
         self.createContext(detach)
         self.createSynchronizers()
 
@@ -47,6 +52,9 @@ class Daemon(object):
         self.context = daemon.DaemonContext()
         self.context.pidfile = lockfile.FileLock(self.pidfile)
         self.context.detach_process = detach
+        if not detach:
+            self.context.stdout = sys.stdout
+            self.context.stderr = sys.stderr
         self.context.working_directory = os.getcwd()
         # umask cannot be queried without being set
         u = os.umask(0)
@@ -54,6 +62,7 @@ class Daemon(object):
         self.context.umask = u
         self.context.signal_map[signal.SIGHUP] = self.sighup
         self.context.signal_map[signal.SIGTERM] = self.sigterm
+        self.context.signal_map[signal.SIGINT] = self.sigterm
         self.context.signal_map[signal.SIGCHLD] = self.sigchld
 
     def createSynchronizers(self):
@@ -72,10 +81,25 @@ class Daemon(object):
                         Synchronize(appCtx, repoCtx, [repo]))
 
     def run(self):
-        with self.context:
-            file(self.pidfile, 'w').write(str(os.getpid()))
-            self.mainLoop()
-            os.remove(self.pidfile)
+        try:
+            self.context.pidfile.acquire(timeout=0.1)
+        except (lockfile.AlreadyLocked, lockfile.LockTimeout):
+            lockpid = None
+            if os.path.exists(self.pidfile):
+                lockpid = int(file(self.pidfile).read().strip())
+            if (lockpid and lockpid != os.getpid() and util.kill(lockpid, 0)):
+                raise lockfile.AlreadyLocked, 'Process %d has %s locked' %(
+                    lockpid, self.pidfile)
+            self.context.pidfile.break_lock()
+        try:
+            with self.context:
+                file(self.pidfile, 'w').write(str(os.getpid()))
+                self.mainLoop()
+        finally:
+            if self.context.pidfile.is_locked():
+                self.context.pidfile.release()
+            if os.path.exists(self.pidfile):
+                os.remove(self.pidfile)
 
     def sigterm(self, signo, frame):
         'stop after all child processes have finished'
@@ -89,10 +113,18 @@ class Daemon(object):
         pass
 
     def runOnce(self, poll=False):
+        if poll:
+            self.progress.setPhase('poll')
+        else:
+            self.progress.setPhase('sync')
         for s in self.synchronizers:
             if not self.stop and not self.restart:
                 try:
+                    repoName = s.ctx.getRepositoryName(s.repos[0])
+                    self.progress.add(repoName)
+                    self.progress.report()
                     s.run(poll=poll)
+                    self.progress.remove(repoName)
                 except:
                     self.report()
             else:
@@ -132,7 +164,12 @@ class Daemon(object):
         try:
             while not self.stop and not self.restart:
                 if waitTime > 0:
+                    self.progress.clear()
+                    self.progress.setPhase('sleep')
+                    self.progress.add('%0.1f seconds' %waitTime)
+                    self.progress.report()
                     time.sleep(waitTime)
+                    self.progress.clear()
                 startTime = time.time()
                 if not poll:
                     syncStartTime = startTime
@@ -154,7 +191,7 @@ class Daemon(object):
                             '--pid-file', self.pidfile]
                 if not self.context.detach_process:
                     execArgs.append('--no-daemon')
-                os.execl(self.execPath, execArgs)
+                os.execl(self.execPath, *execArgs)
 
         raise SystemExit(0)
 

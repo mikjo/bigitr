@@ -15,6 +15,7 @@
 #
 
 import mock
+import lockfile
 import os
 from cStringIO import StringIO
 import signal
@@ -70,8 +71,22 @@ repoconfig = ${DDIR}/bar
         self.removeRecursive(self.dir)
         os.unsetenv('DDIR')
 
+    @mock.patch('bigitr.progress.Progress')
     @mock.patch('bigitr.bigitrdaemon.Daemon.createContext')
-    def test_init(self, cC):
+    def test_initDetach(self, cC, P):
+        d = bigitrdaemon.Daemon('/foo', self.daemonConfig, True, '${DDIR}/pid')
+        self.assertFalse(os.path.exists(self.pidFile))
+        self.assertEquals(d.execPath, '/foo')
+        self.assertEquals(d.config, self.daemonConfig)
+        self.assertEquals(d.pidfile, self.pidFile)
+        self.assertFalse(d.restart)
+        self.assertFalse(d.stop)
+        cC.assert_called_once_with(True)
+        P.assert_called_once_with(outFile=None)
+
+    @mock.patch('bigitr.progress.Progress')
+    @mock.patch('bigitr.bigitrdaemon.Daemon.createContext')
+    def test_initNoDetach(self, cC, P):
         d = bigitrdaemon.Daemon('/foo', self.daemonConfig, False, '${DDIR}/pid')
         self.assertFalse(os.path.exists(self.pidFile))
         self.assertEquals(d.execPath, '/foo')
@@ -80,6 +95,7 @@ repoconfig = ${DDIR}/bar
         self.assertFalse(d.restart)
         self.assertFalse(d.stop)
         cC.assert_called_once_with(False)
+        P.assert_called_once_with()
 
     @mock.patch.multiple('daemon.daemon',
         close_all_open_files=mock.DEFAULT,
@@ -100,6 +116,7 @@ repoconfig = ${DDIR}/bar
         self.assertEqual(d.context.working_directory, os.getcwd())
         self.assertEqual(d.context.signal_map[signal.SIGHUP], d.sighup)
         self.assertEqual(d.context.signal_map[signal.SIGTERM], d.sigterm)
+        self.assertEqual(d.context.signal_map[signal.SIGINT], d.sigterm)
         self.assertEqual(d.context.signal_map[signal.SIGCHLD], d.sigchld)
 
     @mock.patch('bigitr.bigitrdaemon.Daemon.createContext')
@@ -147,6 +164,56 @@ repoconfig = ${DDIR}/bar
         self.assertFalse(os.path.exists(self.pidFile))
         self.assertFalse(d.context.pidfile.is_locked())
 
+    @mock.patch('bigitr.bigitrdaemon.Daemon.mainLoop')
+    @mock.patch.multiple('daemon.daemon',
+        close_all_open_files=mock.DEFAULT,
+        redirect_stream=mock.DEFAULT,
+        register_atexit_function=mock.DEFAULT,
+        change_working_directory=mock.DEFAULT,
+        set_signal_handlers=mock.DEFAULT
+        )
+    def test_runLockRecover(self, mainLoop, **patches):
+        i = []
+        def raiseAlreadyLockedOnce(*args, **kwargs):
+            i.append(1)
+            if len(i) > 1:
+                return
+            raise lockfile.AlreadyLocked
+        d = bigitrdaemon.Daemon('/foo', self.daemonConfig, False, self.pidFile)
+        d.context.pidfile.acquire = mock.Mock()
+        d.context.pidfile.break_lock = mock.Mock()
+        d.context.pidfile.is_locked = mock.Mock()
+        d.context.pidfile.release = mock.Mock()
+        d.context.pidfile.acquire.side_effect = raiseAlreadyLockedOnce
+        file(self.pidFile, 'w').write('1234567890')
+        d.run()
+        self.assertEqual(len(i), 2)
+        d.context.pidfile.break_lock.assert_called_once_with()
+        d.context.pidfile.is_locked.assert_called_once_with()
+        self.assertEqual(d.context.pidfile.release.call_count, 2)
+
+    @mock.patch('bigitr.bigitrdaemon.Daemon.mainLoop')
+    @mock.patch.multiple('daemon.daemon',
+        close_all_open_files=mock.DEFAULT,
+        redirect_stream=mock.DEFAULT,
+        register_atexit_function=mock.DEFAULT,
+        change_working_directory=mock.DEFAULT,
+        set_signal_handlers=mock.DEFAULT
+        )
+    def test_runLockFail(self, mainLoop, **patches):
+        d = bigitrdaemon.Daemon('/foo', self.daemonConfig, False, self.pidFile)
+        d.context.pidfile.acquire = mock.Mock()
+        d.context.pidfile.break_lock = mock.Mock()
+        d.context.pidfile.is_locked = mock.Mock()
+        d.context.pidfile.release = mock.Mock()
+        d.context.pidfile.acquire.side_effect = lockfile.AlreadyLocked
+        file(self.pidFile, 'w').write(str(os.getppid()))
+        self.assertRaises(lockfile.AlreadyLocked, d.run)
+        self.assertEqual(d.context.pidfile.acquire.call_count, 1)
+        d.context.pidfile.break_lock.assert_not_called()
+        d.context.pidfile.is_locked.assert_not_called()
+        d.context.pidfile.release.assert_not_called()
+
     @mock.patch('bigitr.bigitrdaemon.Daemon.__init__')
     def test_sigterm(self, I):
         I.return_value = None
@@ -173,21 +240,39 @@ repoconfig = ${DDIR}/bar
     def test_runOnce(self, I):
         I.return_value = None
         d = bigitrdaemon.Daemon()
+        d.progress = mock.Mock()
         s = mock.Mock()
+        s.repos = ['foo']
+        s.ctx.getRepositoryName.return_value = 'foo'
         d.stop = False
         d.restart = False
         d.synchronizers = [s]
         d.runOnce()
         s.run.assert_called_once_with(poll=False)
+        d.progress.setPhase.assert_called_once_with('sync')
+        d.progress.add.assert_called_once_with('foo')
+        d.progress.report.assert_called_once_with()
+        d.progress.remove.assert_called_once_with('foo')
 
         s.run.reset_mock()
+        d.progress.reset_mock()
         d.runOnce(poll=True)
         s.run.assert_called_once_with(poll=True)
+        d.progress.setPhase.assert_called_once_with('poll')
+        d.progress.add.assert_called_once_with('foo')
+        d.progress.report.assert_called_once_with()
+        d.progress.remove.assert_called_once_with('foo')
+
+        d.progress.reset_mock()
         d.stop = True
         self.assertRaises(SystemExit, d.runOnce)
+        d.progress.setPhase.assert_called_once_with('sync')
+
+        d.progress.reset_mock()
         d.stop = False
         d.restart = True
         self.assertRaises(SystemExit, d.runOnce)
+        d.progress.setPhase.assert_called_once_with('sync')
 
         s.run.reset_mock()
         d.restart = False
@@ -238,6 +323,7 @@ repoconfig = ${DDIR}/bar
     def test_mainLoop(self, rO, I, sleep, Time, execl):
         I.return_value = None
         d = bigitrdaemon.Daemon()
+        d.progress = mock.Mock()
         d.i = 0
         def stop(**kw):
             if 2 == d.i:
@@ -272,6 +358,7 @@ repoconfig = ${DDIR}/bar
     def test_mainLoopSignalHandling(self, rO, I, sleep, execl):
         I.return_value = None
         d = bigitrdaemon.Daemon()
+        d.progress = mock.Mock()
         d.cfg = mock.Mock()
         d.cfg.getFullSyncFrequency.return_value = 1000
         d.cfg.getPollFrequency.return_value = 10000
@@ -283,7 +370,7 @@ repoconfig = ${DDIR}/bar
         d.config = 'b'
         d.pidfile = 'b-p'
         self.assertRaises(SystemExit, d.mainLoop)
-        execl.assert_called_once_with('/foo', ['/foo', '--config', 'b', '--pid-file', 'b-p', '--no-daemon'])
+        execl.assert_called_once_with('/foo', '/foo', '--config', 'b', '--pid-file', 'b-p', '--no-daemon')
 
         execl.reset_mock()
         d.restart = False
@@ -316,13 +403,10 @@ class TestMain(testutils.TestCase):
         D.assert_called_once_with('/foo', '/b', False, '/b-p')
         D().run.assert_called_once_with()
 
-    def test_ArgsEmpty(self, D):
-        bigitrdaemon.main(['/foo'])
-        D.assert_called_once_with('/foo', '~/.bigitrd', True, '~/.bigitrd-pid')
-
-    @mock.patch('sys.stdout')
-    def test_ArgsHelp(self, D, o):
-        self.assertRaises(SystemExit, bigitrdaemon.main, ['/foo', '--help'])
+    def test_ArgsHelp(self, D):
+        with mock.patch('sys.stdout') as o:
+            self.assertRaises(SystemExit, bigitrdaemon.main, ['/foo', '--help'])
+            o.write.assert_called_once_with(mock.ANY)
         D.assert_not_called()
 
     def test_Args(self, D):

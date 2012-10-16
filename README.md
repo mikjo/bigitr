@@ -612,8 +612,9 @@ Bigitr requires nose (may be packaged as python-nose), coverage
 python-mock).  If your version of python does not include argparse,
 you will need the externally-packaged argparse (may be packaged as
 python-argparse) as well.  The bigitrd daemon requires daemon (may
-be packaged as python-daemon) and lockfile (may be packaged as
-python-lockfile) as well.
+be packaged as python-daemon), lockfile (may be packaged as
+python-lockfile), and setproctitle (may be packaged as
+python-setproctitle).
 
 The documentation is maintained in markdown.
 

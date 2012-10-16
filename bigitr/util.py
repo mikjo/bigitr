@@ -65,3 +65,11 @@ def saveDir(fn):
 
 def fileName(name):
     return os.path.abspath(os.path.expandvars(os.path.expanduser(name)))
+
+def kill(pid, sig):
+    # convert exception into True/False
+    try:
+        os.kill(pid, sig)
+        return True
+    except OSError:
+        return False
