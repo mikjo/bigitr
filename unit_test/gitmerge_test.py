@@ -109,8 +109,8 @@ class GitMergeTest(testutils.TestCase):
         with mock.patch('bigitr.gitmerge.Merger.mergeBranch') as mb:
             self.mrg.mergeBranches('repo2', Git)
             mb.assert_has_calls(
-                [mock.call('repo2', mock.ANY, 'cvs-b2'),
-                 mock.call('repo2', mock.ANY, 'cvs-b1')])
+                [mock.call('repo2', mock.ANY, 'cvs-b1'),
+                 mock.call('repo2', mock.ANY, 'cvs-b2')])
 
     def test_mergeBranchesError(self):
         Git = mock.Mock()
@@ -120,7 +120,7 @@ class GitMergeTest(testutils.TestCase):
         with mock.patch('bigitr.gitmerge.Merger.mergeBranch') as mb:
             mb.side_effect = lambda x, y, z: raiseError()
             self.assertRaises(RuntimeError, self.mrg.mergeBranches, 'repo2', Git)
-            mb.assert_called_once_with('repo2', mock.ANY, 'cvs-b2')
+            mb.assert_called_once_with('repo2', mock.ANY, 'cvs-b1')
 
     def test_mergeBranch(self):
         Git = mock.Mock()
