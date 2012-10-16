@@ -90,9 +90,10 @@ email = other@other blah@blah
         file(self.dir + '/foo1.2', 'w')
         file(self.dir + '/foo2.1', 'w')
         file(self.dir + '/bar', 'w')
-        self.assertEqual([self.dir + '/foo1.1',
-                          self.dir + '/foo1.2',
-                          self.dir + '/foo2.1'], self.cfg.getRepoConfigs('foo'))
+        self.assertEqual(set((self.dir + '/foo1.1',
+                              self.dir + '/foo1.2',
+                              self.dir + '/foo2.1')),
+			 set(self.cfg.getRepoConfigs('foo')))
         self.assertEqual([self.dir + '/bar'], self.cfg.getRepoConfigs('bar'))
 
     def test_parseTimeSpec(self):

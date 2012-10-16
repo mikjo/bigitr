@@ -381,6 +381,10 @@ repoconfig = ${DDIR}/bar
 @mock.patch('bigitr.bigitrdaemon.Daemon')
 class TestMain(testutils.TestCase):
     def test_emptyArgs(self, D):
+        if 'BIGITR_DAEMON_CONFIG' in os.environ:
+            del os.environ['BIGITR_DAEMON_CONFIG']
+        if 'BIGITR_DAEMON_PIDFILE' in os.environ:
+            del os.environ['BIGITR_DAEMON_PIDFILE']
         bigitrdaemon.main(['/foo'])
         D.assert_called_once_with(
             '/foo', '~/.bigitrd', True, '~/.bigitrd-pid')
