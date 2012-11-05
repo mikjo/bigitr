@@ -184,6 +184,9 @@ has three sections:
     onerror = abort # abort|warn|continue
     cvsdir = /path/to/directory/for/cvs/export
 
+    [merge]
+    onerror = abort # abort|warn|continue
+
     [export]
     preimport = true # false to overwrite whatever is in CVS
     onerror = abort # abort|warn|continue
@@ -218,6 +221,9 @@ configuration might be:
     [import]
     onerror = abort
     cvsdir = ${BIGITR_DATA}/export
+
+    [merge]
+    onerror = warn
 
     [export]
     preimport = true

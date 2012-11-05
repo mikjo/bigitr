@@ -23,7 +23,7 @@ class Merger(object):
         self.err = errhandler.Errors(ctx)
 
     def mergeBranches(self, repository, Git, requestedBranch=None):
-        onerror = self.ctx.getImportError()
+        onerror = self.ctx.getMergeError()
         try:
             for gitbranch in sorted(self.ctx.getMergeBranchMaps(repository).keys()):
                 if requestedBranch is None or gitbranch == requestedBranch:

@@ -91,6 +91,14 @@ cvsdir = /path/to/directory/for/cvs/checkouts/for/branch/imports
         self.assertEqual(self.cfgdef.getImportError(),
             appconfig.ABORT)
 
+    def test_getExportError(self):
+        self.assertEqual(self.cfg.getExportError(),
+            appconfig.CONTINUE)
+
+    def test_getExportErrorDefault(self):
+        self.assertEqual(self.cfgdef.getExportError(),
+            appconfig.ABORT)
+
     def test_getExportCVSDir(self):
         self.assertEqual(self.cfg.getExportCVSDir(),
             '/path/to/directory/for/cvs/exports')

@@ -30,6 +30,7 @@ class GitMergeTest(testutils.TestCase):
                                      'logdir = /logdir\n'
                                      'gitdir = /gitdir\n'
                                      '[import]\n'
+                                     '[merge]\n'
                                      '[export]\n'
                                      'cvsdir = /cvsdir\n')
                 repConfig = StringIO('[repo]\n'

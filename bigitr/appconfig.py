@@ -57,6 +57,9 @@ class AppConfig(config.Config):
     def getImportError(self):
         return onerror[self.get('import', 'onerror')]
 
+    def getMergeError(self):
+        return onerror[self.get('merge', 'onerror')]
+
     def getImportCVSDir(self):
         return self.get('import', 'cvsdir')
     

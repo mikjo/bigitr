@@ -68,6 +68,7 @@ class WorkDir(unittest.TestCase):
                               'compresslogs = false\n'
                               '[export]\n'
                               'cvsdir = %s\n'
+                              '[merge]\n'
                               '[import]\n'
                               'cvsdir = %s\n'
                               %(self.logdir,
