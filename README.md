@@ -639,7 +639,7 @@ actively maintained.
 Life Cycle
 ==========
 
-A typical life cycle for Bigitr is envisioned to be:
+A typical life cycle for Bigitr is envisioned to be something like:
 
 * Introduced to allow developers to use Git for new development
   while still enabling processes based on CVS.  Synchronization
@@ -647,24 +647,27 @@ A typical life cycle for Bigitr is envisioned to be:
   still commit to CVS even through primary development has moved
   to Git.
 
+* Bigitrd is configured to automatically process Git and CVS repository
+  commits.
+
 * Several older CVS branches are imported into Git, with automatic
   merging configured into `master`, so that maintenance fixes done
   in CVS for older versions maintained in CVS will be applied also
   in the latest product maintained in Git.
 
-* Git and CVS repository hooks are installed to call Bigitr on
-  push or commit, respectively.
+* All development processes move to Git, so bidirectional merge from
+  CVS is no longer used for active branches, and development branches
+  in Git are merely exported to CVS for legacy processes.
+
+* No maintenance branches in CVS are sufficiently related to the
+  Git development branches to be merged, and so import from CVS into
+  legacy branches is disabled.
 
 * All processes/people then move to Git for source code control, so
-  Git branches no longer need to be exported to CVS.  At this time,
-  the configuration is modified to disabled export of Git branches
-  to CVS branches, but the import and merge configuration is retained.
-  The Git repository hooks are therefore removed, so Bigitr is invoked
-  only when CVS commits occur.
+  Git branches no longer need to be exported to CVS.
 
-* All old maintenance branches in CVS are no longer maintained in
-  CVS, and Bigitr is no longer used.
-
+* Bigitr is no longer required, and is therefore retired from active
+  user.
 
 
 Contributing
@@ -710,4 +713,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Copyright 2012 SAS Institute
+Copyright 2012-2013 SAS Institute
