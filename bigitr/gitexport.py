@@ -85,6 +85,12 @@ class Exporter(object):
             raise RuntimeError("Not committing empty branch '%s'"
                                " from git branch '%s'" %(CVS.branch, gitbranch))
 
+        CVSMetaData = [x for x in AddedDirs if x == 'CVS' or x.endswith('/CVS')]
+        if CVSMetaData:
+            raise RuntimeError("Not exporting with CVS metadata included"
+                               " in Git repository: '%s'" %
+                               ' '.join(CVSMetaData))
+
         prefix = self.ctx.getBranchPrefix(repository, CVS.branch)
         if prefix:
             GitMessages = '\n\n'.join((prefix, GitMessages))

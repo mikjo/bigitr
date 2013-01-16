@@ -967,7 +967,25 @@ class TestStoryAPI(WorkDir):
         self.assertTrue('rootfile' in
             file(self.cvsroot+'/module1/Attic/rootfile,v').read())
 
+    def test_lowlevelGitHasCVSDirs(self):
+        'test export from Git fails if CVS metadata checked into Git'
+        self.unpack('TESTROOT.6.tar.gz')
+        exp = gitexport.Exporter(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
 
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  'mkdir -p CVS newdir/CVS; '
+                  'echo > CVS/Root; '
+                  'echo > newdir/CVS/Root; '
+                  'git add newdir/CVS/Root CVS/Root; '
+                  'git commit -a -m "add CVS/Root files"; '
+                  'git push --all; '
+                  %self.gitco)
+        self.assertRaises(RuntimeError, exp.exportgit,
+            'git/module1', Git, CVSb1, 'b1', 'export-b1')
 
 
 class TestStoryCommands(WorkDir):
