@@ -20,7 +20,7 @@ from StringIO import StringIO
 import tempfile
 import testutils
 
-from bigitr import gitexport, context
+from bigitr import gitexport, context, shell, util
 
 class GitExportTest(testutils.TestCase):
     def setUp(self):
@@ -125,16 +125,37 @@ class GitExportTest(testutils.TestCase):
                 self.CVS.update.assert_called_once_with()
                 self.CVS.checkout.assert_not_called()
 
-    def test_prepareGitClone(self):
-        with mock.patch('bigitr.gitexport.Exporter.trackBranch') as tb:
-            bi = ['b1', 'master']
-            self.Git.branches.return_value = bi
-            bo = self.exp.prepareGitClone('repo', self.Git, 'b1')
-            self.assertEqual(bi, bo)
-            self.Git.pristine.assert_called_once_with()
-            tb.assert_called_once_with('repo', self.Git, 'b1', bi)
-            self.Git.checkout.assert_called_once_with('b1')
-            self.Git.mergeFastForward.assert_called_once_with('origin/b1')
+    @mock.patch('bigitr.gitexport.Exporter.trackBranch')
+    @mock.patch('bigitr.util.removeRecursive')
+    @mock.patch('os.chdir')
+    def test_prepareGitClone(self, cd, rR, tb):
+        bi = ['b1', 'master']
+        self.Git.branches.return_value = bi
+        bo = self.exp.prepareGitClone('repo', self.Git, 'b1')
+        self.assertEqual(bi, bo)
+        self.Git.pristine.assert_called_once_with()
+        tb.assert_called_once_with('repo', self.Git, 'b1', bi)
+        self.Git.checkout.assert_called_once_with('b1')
+        self.Git.mergeFastForward.assert_called_once_with('origin/b1')
+        util.removeRecursive.assert_not_called()
+        os.chdir.assert_not_called()
+
+    @mock.patch('bigitr.gitexport.Exporter.trackBranch')
+    @mock.patch('bigitr.util.removeRecursive')
+    @mock.patch('os.chdir')
+    @mock.patch('bigitr.git.Git.mergeFastForward')
+    def test_prepareGitCloneFailure(self, mFF, cd, rR, tb):
+        bi = ['b1', 'master']
+        self.Git.branches.return_value = bi
+        self.Git.mergeFastForward.side_effect = shell.ErrorExitCode(1)
+        self.assertRaises(shell.ErrorExitCode, self.exp.prepareGitClone,
+            'repo', self.Git, 'b1')
+        self.Git.pristine.assert_called_once_with()
+        tb.assert_called_once_with('repo', self.Git, 'b1', bi)
+        self.Git.checkout.assert_called_once_with('b1')
+        self.Git.mergeFastForward.assert_called_once_with('origin/b1')
+        util.removeRecursive.assert_called_once_with('repo')
+        os.chdir.assert_called_once_with('/gitdir')
 
     def test_calculateFileSetsEmpty(self):
         self.CVS.listContentFiles.return_value = []

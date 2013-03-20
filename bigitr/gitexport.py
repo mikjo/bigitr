@@ -145,7 +145,15 @@ class Exporter(object):
         branches = Git.branches()
         self.trackBranch(repository, Git, gitbranch, branches)
         Git.checkout(gitbranch)
-        Git.mergeFastForward('origin/' + gitbranch)
+        try:
+            Git.mergeFastForward('origin/' + gitbranch)
+        except:
+            # if the fast forward failed after reset --hard HEAD, then the
+            # repository is in an indeterminate state, so remove it; it will
+            # be recreated on the next operation
+            os.chdir(self.ctx.getGitDir())
+            util.removeRecursive(self.ctx.getRepositoryName(repository))
+            raise
         return branches
 
     def calculateFileSets(self, CVS, Git):
