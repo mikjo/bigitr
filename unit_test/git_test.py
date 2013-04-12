@@ -1,5 +1,5 @@
 #
-# Copyright 2012 SAS Institute
+# Copyright 2012-2013 SAS Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -67,6 +67,11 @@ class TestGit(testutils.TestCase):
             self.git.reset()
             shell.run.assert_called_once_with(mock.ANY,
                 'git', 'reset', '--hard', 'HEAD')
+
+            shell.run.reset_mock()
+            self.git.reset('foo')
+            shell.run.assert_called_once_with(mock.ANY,
+                'git', 'reset', '--hard', 'foo')
 
     def test_clean(self):
         with mock.patch('bigitr.git.shell.run'):

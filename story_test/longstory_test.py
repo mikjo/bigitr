@@ -1,5 +1,5 @@
 #
-# Copyright 2012 SAS Institute
+# Copyright 2012-2013 SAS Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -1147,6 +1147,37 @@ class TestStoryCommands(WorkDir):
                   %self.gitdir)
         self.assertEqual(file(self.gitdir + '/module3/.gitignore').read(),
             'copy.to.gitignore\n')
+        self.assertNoTracebackLogs()
+
+        os.system('cd %s; git clone %s/git/module2' %(self.gitco, self.gitroot))
+        # introduce a file that should be auto-normalized
+        os.system('cd %s/module2; '
+                  'git checkout -f master; '
+                  "echo '* text eol=lf' > .gitattributes; "
+                  'echo > normalizenewline; '
+                  'git add .gitattributes normalizenewline; '
+                  'git commit -m normalize; '
+                  'git push; '
+                  %self.gitco)
+        self.invoke('export', 'module2::master')
+        self.assertNoTracebackLogs()
+        # force it to be denormalized by using the plumbing
+        os.system('cd %s/module2; '
+                  'git checkout -f master; '
+                  "git update-index --add --cacheinfo 100644 $(echo -e '\r\n' | git hash-object -w --stdin) normalizenewline; "
+                  'git commit -m denormalize; '
+                  'git push; '
+                  %self.gitco)
+        self.invoke('export', 'module2::master')
+        self.assertNoTracebackLogs()
+        # now renormalize and make sure export still works
+        os.system('cd %s/module2; '
+                  'git checkout -f master; '
+                  "git update-index --add --cacheinfo 100644 $(echo -e '\n' | git hash-object -w --stdin) normalizenewline; "
+                  'git commit -m denormalize; '
+                  'git push; '
+                  %self.gitco)
+        self.invoke('export', 'module2::master')
         self.assertNoTracebackLogs()
 
     def test_other_commands(self):

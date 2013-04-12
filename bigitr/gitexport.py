@@ -1,5 +1,5 @@
 #
-# Copyright 2012 SAS Institute
+# Copyright 2012-2013 SAS Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -145,15 +145,8 @@ class Exporter(object):
         branches = Git.branches()
         self.trackBranch(repository, Git, gitbranch, branches)
         Git.checkout(gitbranch)
-        try:
-            Git.mergeFastForward('origin/' + gitbranch)
-        except:
-            # if the fast forward failed after reset --hard HEAD, then the
-            # repository is in an indeterminate state, so remove it; it will
-            # be recreated on the next operation
-            os.chdir(self.ctx.getGitDir())
-            util.removeRecursive(self.ctx.getRepositoryName(repository))
-            raise
+        # effectively, a forced fast-forward; preserve no forks here
+        Git.reset('origin/' + gitbranch)
         return branches
 
     def calculateFileSets(self, CVS, Git):

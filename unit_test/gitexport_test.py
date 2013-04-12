@@ -1,5 +1,5 @@
 #
-# Copyright 2012 SAS Institute
+# Copyright 2012-2013 SAS Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -136,26 +136,9 @@ class GitExportTest(testutils.TestCase):
         self.Git.pristine.assert_called_once_with()
         tb.assert_called_once_with('repo', self.Git, 'b1', bi)
         self.Git.checkout.assert_called_once_with('b1')
-        self.Git.mergeFastForward.assert_called_once_with('origin/b1')
+        self.Git.reset.assert_called_once_with('origin/b1')
         util.removeRecursive.assert_not_called()
         os.chdir.assert_not_called()
-
-    @mock.patch('bigitr.gitexport.Exporter.trackBranch')
-    @mock.patch('bigitr.util.removeRecursive')
-    @mock.patch('os.chdir')
-    @mock.patch('bigitr.git.Git.mergeFastForward')
-    def test_prepareGitCloneFailure(self, mFF, cd, rR, tb):
-        bi = ['b1', 'master']
-        self.Git.branches.return_value = bi
-        self.Git.mergeFastForward.side_effect = shell.ErrorExitCode(1)
-        self.assertRaises(shell.ErrorExitCode, self.exp.prepareGitClone,
-            'repo', self.Git, 'b1')
-        self.Git.pristine.assert_called_once_with()
-        tb.assert_called_once_with('repo', self.Git, 'b1', bi)
-        self.Git.checkout.assert_called_once_with('b1')
-        self.Git.mergeFastForward.assert_called_once_with('origin/b1')
-        util.removeRecursive.assert_called_once_with('repo')
-        os.chdir.assert_called_once_with('/gitdir')
 
     def test_calculateFileSetsEmpty(self):
         self.CVS.listContentFiles.return_value = []

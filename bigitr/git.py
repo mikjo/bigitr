@@ -1,5 +1,5 @@
 #
-# Copyright 2012 SAS Institute
+# Copyright 2012-2013 SAS Institute
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ class Git(object):
     def fetch(self):
         return shell.run(self.log, 'git', 'fetch', '--all')
 
-    def reset(self):
-        shell.run(self.log, 'git', 'reset', '--hard', 'HEAD')
+    def reset(self, ref='HEAD'):
+        shell.run(self.log, 'git', 'reset', '--hard', ref)
 
     def clean(self):
         shell.run(self.log, 'git', 'clean', '--force', '-x', '-d')
