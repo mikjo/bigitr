@@ -24,6 +24,9 @@ from bigitr import util
 # so there is one CVS object per branch, not per repository.
 # No checkout directory is created for exporting
 
+class CVSError(RuntimeError):
+    pass
+
 def setCVSROOT(fn):
     def wrapper(self, *args, **kwargs):
         self.setEnvironment()
@@ -36,6 +39,13 @@ def inCVSPATH(fn):
         os.chdir(self.path)
         try:
             fn(self, *args, **kwargs)
+        except Exception as e:
+            try:
+                # Failed CVS operations may leave checkout in inconsistent state.
+                # Remove the checkout to prevent trouble next time around
+                util.removeRecursive(self.path)
+            finally:
+                raise CVSError(e)
         finally:
             os.chdir(oldDir)
     return wrapper

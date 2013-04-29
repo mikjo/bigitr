@@ -196,10 +196,12 @@ class TestCVS(testutils.TestCase):
             self.cvs.addFiles([])
             self.assertFalse(shell.run.called)
 
-    def test_commit(self):
+    @mock.patch('bigitr.util.removeRecursive')
+    def test_commit(self, rR):
         with mock.patch('bigitr.git.shell.run'):
             with mock.patch.multiple('os', remove=mock.DEFAULT,
                                            close=mock.DEFAULT,
+                                           rmdir=mock.DEFAULT,
                                            write=mock.DEFAULT) as mockos:
                 with mock.patch('tempfile.mkstemp') as mockmkstemp:
                     mockmkstemp.return_value = (123456789, '/notThere')
@@ -210,6 +212,8 @@ class TestCVS(testutils.TestCase):
                         'cvs', 'commit', '-r', 'brnch', '-R', '-F', '/notThere')
                     mockos['remove'].assert_called_once_with('/notThere')
                     mockos['close'].assert_called_once_with(123456789)
+                    rR.assert_not_called()
+                    mockos['rmdir'].assert_not_called(mock.ANY)
 
     def test_commitWithCVSVariables(self):
         with mock.patch('bigitr.git.shell.run'):
@@ -229,6 +233,26 @@ class TestCVS(testutils.TestCase):
                         'commit', '-r', 'brnch', '-R', '-F', '/notThere')
                     mockos['remove'].assert_called_once_with('/notThere')
                     mockos['close'].assert_called_once_with(12345678)
+
+    @mock.patch('bigitr.util.removeRecursive')
+    @mock.patch('tempfile.mkstemp')
+    @mock.patch('bigitr.git.shell.run')
+    def test_commitWithErrorReturn(self, run, mockmkstemp, rR):
+        with mock.patch.multiple('os', remove=mock.DEFAULT,
+                                       close=mock.DEFAULT,
+                                       rmdir=mock.DEFAULT,
+                                       write=mock.DEFAULT) as mockos:
+            mockmkstemp.return_value = (123456789, '/notThere')
+            run.side_effect = lambda *x, **z: {}[1]
+            self.assertRaises(cvs.CVSError, self.cvs.commit, 'commitMessage')
+            mockos['write'].assert_called_once_with(123456789, 'commitMessage')
+            mockmkstemp.assert_called_once_with('.bigitr')
+            shell.run.assert_called_once_with(mock.ANY,
+                'cvs', 'commit', '-r', 'brnch', '-R', '-F', '/notThere')
+            mockos['remove'].assert_called_once_with('/notThere')
+            mockos['close'].assert_called_once_with(123456789)
+            rR.assert_called_once_with(self.cvs.path)
+            mockos['rmdir'].assert_not_called(mock.ANY)
 
     def test_runPreHooks(self):
         with mock.patch('bigitr.git.shell.run'):

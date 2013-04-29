@@ -1026,6 +1026,73 @@ class TestStoryAPI(WorkDir):
         self.assertRaises(RuntimeError, exp.exportgit,
                           'git/module1', Git, CVSb1, 'b1', 'export-b1')
 
+    def test_lowlevel6GitChangesDirToFileOnOtherBranch(self):
+        'handle file changing to directory in Git export'
+        self.unpack('TESTROOT.6.tar.gz')
+        exp = gitexport.Exporter(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2')
+
+        # Order matters!  At least in testing here, CVS will let you replace a
+        # file with a directory on independent branches, but not a directory
+        # with a file on independent branches. (It allows neither on the same branch.)
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  'mkdir conflict ;'
+                  'touch conflict/conflict ;'
+                  'git add conflict ;'
+                  'git commit -a -m "add conflict dir on b1" ;'
+                  'git checkout b2; '
+                  'touch conflict ;'
+                  'git add conflict ;'
+                  'git commit -a -m "add conflict file on b2" ;'
+                  'git push --all; '
+                  %self.gitco)
+        self.assertEquals(False, os.path.exists(self.cvsdir + '/module1/b1/module1'))
+        self.assertEquals(False, os.path.exists(self.cvsdir + '/module1/b2/module1'))
+        exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
+        self.assertEquals(True, os.path.exists(self.cvsdir + '/module1/b1/module1'))
+        self.assertRaises(cvs.CVSError, exp.exportgit,
+                          'git/module1', Git, CVSb2, 'b2', 'export-b2')
+        self.assertEquals(False, os.path.exists(self.cvsdir + '/module1/b2/module1'))
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  'touch conflict/2 ;'
+                  'git add conflict ;'
+                  'git commit -a -m "add conflict dir file on b1" ;'
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
+        self.assertEquals(True, os.path.exists(self.cvsdir + '/module1/b1/module1'))
+        os.system('cd %s/module1; '
+                  'git checkout b2; '
+                  'git rm conflict ;'
+                  'git commit -a -m "remove conflict file on b2" ;'
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb2, 'b2', 'export-b2')
+        self.assertEquals(True, os.path.exists(self.cvsdir + '/module1/b2/module1'))
+
+        # Now, show that once the directory has existed in the past, it is always in the way
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  'git rm -r conflict ;'
+                  'git commit -a -m "remove conflict dir on b1" ;'
+                  'git checkout b2; '
+                  'touch conflict ;'
+                  'git add conflict ;'
+                  'git commit -a -m "re-add conflict file on b2" ;'
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVSb1, 'b1', 'export-b1')
+        self.assertEquals(True, os.path.exists(self.cvsdir + '/module1/b1/module1'))
+        # having removed the conflicting dir, the error still remains, permanently
+        self.assertRaises(cvs.CVSError, exp.exportgit,
+                          'git/module1', Git, CVSb2, 'b2', 'export-b2')
+        self.assertEquals(False, os.path.exists(self.cvsdir + '/module1/b2/module1'))
+
 
 class TestStoryCommands(WorkDir):
     def setUp(self):
