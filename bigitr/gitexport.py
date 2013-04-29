@@ -77,13 +77,25 @@ class Exporter(object):
         # out from CVS, since this checkout/update can be slow
         self.checkoutCVS(CVS)
 
-        GitFileSet, DeletedFiles, AddedFiles, CommonFiles, AddedDirs = self.calculateFileSets(CVS, Git)
+        GitFileSet, DeletedFiles, AddedFiles, CommonFiles, DeletedDirs, AddedDirs = self.calculateFileSets(CVS, Git)
+        FilesToDirectories = AddedDirs.intersection(DeletedFiles)
+        DirectoriesToFiles = DeletedDirs.intersection(AddedFiles)
 
         if not GitFileSet:
             # do not push an empty branch in order to avoid deleting a
             # whole CVS branch due to configuration failure
             raise RuntimeError("Not committing empty branch '%s'"
                                " from git branch '%s'" %(CVS.branch, gitbranch))
+
+        if FilesToDirectories:
+            raise RuntimeError("File(s) '%s' changed to directory,"
+                               " which CVS cannot handle." %
+                               ("', '".join(sorted(list(FilesToDirectories)))))
+
+        if DirectoriesToFiles:
+            raise RuntimeError("Directory/ies '%s' changed to file,"
+                               " which CVS cannot handle." %
+                               ("', '".join(sorted(list(DirectoriesToFiles)))))
 
         CVSMetaData = [x for x in AddedDirs if x == 'CVS' or x.endswith('/CVS')]
         if CVSMetaData:
@@ -165,7 +177,8 @@ class Exporter(object):
         CVSDirs = set(os.path.dirname(x) for x in CVSFileSet)
         CVSDirs = set(x for x in CVSDirs if x)
         AddedDirs = GitDirs - CVSDirs
-        return GitFileSet, DeletedFiles, AddedFiles, CommonFiles, AddedDirs
+        DeletedDirs = CVSDirs - GitDirs
+        return GitFileSet, DeletedFiles, AddedFiles, CommonFiles, DeletedDirs, AddedDirs
 
     @staticmethod
     def trackBranch(repository, Git, branch, branches):

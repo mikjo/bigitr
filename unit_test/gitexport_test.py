@@ -143,53 +143,79 @@ class GitExportTest(testutils.TestCase):
     def test_calculateFileSetsEmpty(self):
         self.CVS.listContentFiles.return_value = []
         self.Git.listContentFiles.return_value = []
-        G, D, AF, C, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
         self.assertEqual(G, set())
         self.assertEqual(D, set())
         self.assertEqual(AF, set())
         self.assertEqual(C, set())
+        self.assertEqual(DD, set())
         self.assertEqual(AD, set())
 
     def test_calculateFileSetsAlmostEmpty(self):
         self.CVS.listContentFiles.return_value = ['.cvsignore']
         self.Git.listContentFiles.return_value = []
-        G, D, AF, C, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
         self.assertEqual(G, set())
         self.assertEqual(D, set())
         self.assertEqual(AF, set())
         self.assertEqual(C, set())
+        self.assertEqual(DD, set())
         self.assertEqual(AD, set())
 
     def test_calculateFileSetsNewDirectory(self):
         self.CVS.listContentFiles.return_value = ['a/b', 'a/c']
         self.Git.listContentFiles.return_value = ['a/b', 'a/c', 'b/a']
-        G, D, AF, C, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
         self.assertEqual(G, set(('a/b', 'a/c', 'b/a')))
         self.assertEqual(D, set())
         self.assertEqual(AF, set(('b/a',)))
         self.assertEqual(C, set(('a/b', 'a/c')))
+        self.assertEqual(DD, set())
         self.assertEqual(AD, set(('b',)))
 
     def test_calculateFileSetsNewRootFile(self):
         'https://github.com/mikjo/bigitr/issues/1'
         self.CVS.listContentFiles.return_value = ['a/b', 'a/c']
         self.Git.listContentFiles.return_value = ['a/b', 'a/c', 'b']
-        G, D, AF, C, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
         self.assertEqual(G, set(('a/b', 'a/c', 'b')))
         self.assertEqual(D, set())
         self.assertEqual(AF, set(('b',)))
         self.assertEqual(C, set(('a/b', 'a/c')))
+        self.assertEqual(DD, set())
         self.assertEqual(AD, set(()))
-
 
     def test_calculateFileSetsDeletedFiles(self):
         self.CVS.listContentFiles.return_value = ['a/b', 'a/c']
         self.Git.listContentFiles.return_value = ['a/b']
-        G, D, AF, C, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
         self.assertEqual(G, set(('a/b',)))
         self.assertEqual(D, set(('a/c',)))
         self.assertEqual(AF, set())
         self.assertEqual(C, set(('a/b',)))
+        self.assertEqual(DD, set())
+        self.assertEqual(AD, set())
+
+    def test_calculateFileSetsFileToDirectory(self):
+        self.CVS.listContentFiles.return_value = ['a']
+        self.Git.listContentFiles.return_value = ['a/b']
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        self.assertEqual(G, set(('a/b',)))
+        self.assertEqual(D, set(('a',)))
+        self.assertEqual(AF, set(('a/b',)))
+        self.assertEqual(C, set(()))
+        self.assertEqual(DD, set())
+        self.assertEqual(AD, set(('a',)))
+
+    def test_calculateFileSetsDirectoryToFile(self):
+        self.CVS.listContentFiles.return_value = ['a/b']
+        self.Git.listContentFiles.return_value = ['a']
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        self.assertEqual(G, set(('a',)))
+        self.assertEqual(D, set(('a/b',)))
+        self.assertEqual(AF, set(('a',)))
+        self.assertEqual(C, set(()))
+        self.assertEqual(DD, set(('a',)))
         self.assertEqual(AD, set())
 
     def test_trackBranch(self):

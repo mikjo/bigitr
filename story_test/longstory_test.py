@@ -967,7 +967,7 @@ class TestStoryAPI(WorkDir):
         self.assertTrue('rootfile' in
             file(self.cvsroot+'/module1/Attic/rootfile,v').read())
 
-    def test_lowlevelGitHasCVSDirs(self):
+    def test_lowlevel6GitHasCVSDirs(self):
         'test export from Git fails if CVS metadata checked into Git'
         self.unpack('TESTROOT.6.tar.gz')
         exp = gitexport.Exporter(self.ctx)
@@ -986,6 +986,45 @@ class TestStoryAPI(WorkDir):
                   %self.gitco)
         self.assertRaises(RuntimeError, exp.exportgit,
             'git/module1', Git, CVSb1, 'b1', 'export-b1')
+
+    def test_lowlevel6GitChangesFileToDir(self):
+        'handle file changing to directory in Git export'
+        self.unpack('TESTROOT.6.tar.gz')
+        exp = gitexport.Exporter(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  'git rm b1.1; '
+                  'mkdir b1.1; '
+                  'touch b1.1/newfile; '
+                  'git add b1.1/newfile; '
+                  'git commit -a -m "change b1.1 from file to directory"; '
+                  'git push --all; '
+                  %self.gitco)
+        self.assertRaises(RuntimeError, exp.exportgit,
+                          'git/module1', Git, CVSb1, 'b1', 'export-b1')
+
+    def test_lowlevel6GitChangesDirToFile(self):
+        'handle file changing to directory in Git export'
+        self.unpack('TESTROOT.6.tar.gz')
+        exp = gitexport.Exporter(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb1 = cvs.CVS(self.ctx, 'git/module1', 'b1')
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout b1; '
+                  'git rm -rf newdir; '
+                  'touch newdir; '
+                  'git add newdir; '
+                  'git commit -a -m "change newdir from directory to file"; '
+                  'git push --all; '
+                  %self.gitco)
+        self.assertRaises(RuntimeError, exp.exportgit,
+                          'git/module1', Git, CVSb1, 'b1', 'export-b1')
 
 
 class TestStoryCommands(WorkDir):
