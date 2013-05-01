@@ -695,7 +695,8 @@ modify.  You may, of course, add appropriate copyright statements.
 Contributions which include modifications to the source code are
 requested to include appropriate tests for the changes.  New or
 modified tests should cover all of the changed and affected code,
-maintaining 100% code coverage overall.
+maintaining 100% unit test code coverage as well as 100% coverage
+of normal logic in story tests.
 
 
 License
