@@ -312,5 +312,3 @@ class GitExportTest(testutils.TestCase):
             self.exp.trackBranch, 'repo', self.Git, 'b1', set(()))
         self.Git.trackBranch.assert_not_called()
         self.Git.newBranch.assert_not_called()
-
-    # exportgit tested only by story testing
