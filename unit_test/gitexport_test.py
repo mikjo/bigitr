@@ -66,6 +66,90 @@ class GitExportTest(testutils.TestCase):
             self.assertRaises(ZeroDivisionError,
                 self.exp.exportBranches, 'repo', self.Git)
 
+    @mock.patch('bigitr.gitexport.Exporter.assertNoCVSMetaData')
+    @mock.patch('bigitr.gitexport.Exporter.calculateFileSets')
+    @mock.patch('bigitr.gitexport.Exporter.checkoutCVS')
+    @mock.patch('bigitr.gitexport.Exporter.getGitMessages')
+    @mock.patch('bigitr.gitexport.Exporter.prepareGitClone')
+    @mock.patch('bigitr.gitexport.Exporter.cloneGit')
+    @mock.patch('os.chdir')
+    def test_exportgit(self, cd, cG, pGC, gGM, cC, cFS, aNCMD):
+        pGC.return_value = set(('b1', 'export-b1', 'remotes/origin/export-b1'))
+        gGM.return_value = 'message'
+        cFS.return_value = [set(('f',)), set(), set(('f',)), set(), set(), set()]
+        self.CVS.branch = 'b1'
+        self.exp.exportgit('repo2', self.Git, self.CVS, 'b1', 'export-b1')
+        cG.assert_called_with('repo2', self.Git, '/'.join((self.ctx.getGitDir(), 'repo2')))
+        pGC.assert_called_with('repo2', self.Git, 'b1')
+        gGM.assert_called_with(self.Git, pGC.return_value,
+                               set(('export-b1', 'remotes/origin/export-b1')),
+                               'b1', 'remotes/origin/export-b1')
+        self.Git.runExpPreHooks.assert_called_with('b1')
+        cC.assert_called_with(self.CVS)
+        cFS.assert_called_with(self.CVS, self.Git)
+        aNCMD.assert_called_with(set(()))
+        self.CVS.deleteFiles.assert_called_with([])
+        self.CVS.copyFiles.assert_called_with('/gitdir/repo2', ['f'])
+        self.CVS.addDirectories.assert_called_with([])
+        self.CVS.addFiles.assert_called_with(['f'])
+        self.CVS.runPreHooks.assert_called_with()
+        self.Git.infoDiff.assert_called_with('remotes/origin/export-b1', 'b1')
+        self.CVS.commit.assert_called_with('message')
+        self.Git.push.assert_called_with('origin', 'b1', 'export-b1')
+        self.CVS.runPostHooks.assert_called_with()
+        self.Git.runExpPostHooks.assert_called_with('b1')
+
+        # test other cases from the bottom up
+        self.Git.infoDiff.reset_mock()
+        pGC.return_value = set(('b1',))
+        self.exp.exportgit('repo2', self.Git, self.CVS, 'b1', 'export-b1')
+        self.Git.infoDiff.assert_not_called()
+
+        self.ctx._rm.set('repo2', 'prefix.b1', 'pre')
+        self.exp.exportgit('repo2', self.Git, self.CVS, 'b1', 'export-b1')
+        self.CVS.commit.assert_called_with('pre\n\nmessage')
+
+        cFS.return_value = [set(('f',)), set(('a',)), set(('f',)), set(), set(), set(('a',))]
+        self.assertRaises(RuntimeError,
+            self.exp.exportgit, 'repo2', self.Git, self.CVS, 'b1', 'export-b1')
+
+        cFS.return_value = [set(('a', 'f',)), set(), set(('a',)), set(), set(('a',)), set()]
+        self.assertRaises(RuntimeError,
+            self.exp.exportgit, 'repo2', self.Git, self.CVS, 'b1', 'export-b1')
+
+        cFS.return_value = [set(), set(), set(), set(), set(), set()]
+        self.assertRaises(RuntimeError,
+            self.exp.exportgit, 'repo2', self.Git, self.CVS, 'b1', 'export-b1')
+
+        gGM.return_value = ''
+        self.Git.runExpPreHooks.reset_mock()
+        self.exp.exportgit('repo2', self.Git, self.CVS, 'b1', 'export-b1')
+        # ensure that it returned before the very next statement
+        self.Git.runExpPreHooks.assert_not_called()
+
+    def test_getGitMessages(self):
+        gm = self.exp.getGitMessages(self.Git,
+            set(['a',]),
+            set(['e-a', 'remotes/origin/e-a']),
+            'a',  'remotes/origin/e-a')
+        self.assertEqual(gm, 'Initial export to CVS from git branch a')
+        self.Git.logmessages.assert_not_called()
+
+        self.Git.logmessages.return_value = 'fakemessage'
+        gm = self.exp.getGitMessages(self.Git,
+            set(['a', 'e-a', 'remotes/origin/e-a']),
+            set(['e-a', 'remotes/origin/e-a']),
+            'a',  'remotes/origin/e-a')
+        self.assertEqual(gm, 'fakemessage')
+
+    def test_assertNoCVSMetaData(self):
+        self.exp.assertNoCVSMetaData(['a', 'b'])
+        self.exp.assertNoCVSMetaData(['CVSa', 'bCVS'])
+        self.assertRaises(RuntimeError, self.exp.assertNoCVSMetaData,
+            ['a', 'CVS'])
+        self.assertRaises(RuntimeError, self.exp.assertNoCVSMetaData,
+            ['a', 'a/CVS'])
+
     def test_cloneGit(self):
         with mock.patch('os.chdir') as cd:
             with mock.patch('os.path.exists') as exists:

@@ -54,16 +54,14 @@ class Exporter(object):
         self.cloneGit(repository, Git, repoDir)
 
         branches = self.prepareGitClone(repository, Git, gitbranch)
-        if (branches - exportbranches) == branches:
-            GitMessages = 'Initial export to CVS from git branch %s' %gitbranch
-        else:
-            GitMessages = Git.logmessages(originExportBranch, gitbranch)
-            if GitMessages == '':
-                # There have been no changes in Git since the last export,
-                # so there is nothing to export. (If CVS shows changes,
-                # the changes should be due to normalization such as
-                # populated CVS keywords checked into Git.)
-                return
+        GitMessages = self.getGitMessages(Git, branches, exportbranches,
+                                          gitbranch, originExportBranch)
+        if GitMessages == '':
+            # There have been no changes in Git since the last export,
+            # so there is nothing to export. (If CVS shows changes,
+            # the changes should be due to normalization such as
+            # populated CVS keywords checked into Git.)
+            return
 
         # it is not recommended that hooks commit, but if they do, they will
         # have commit messages that are automated and should not show up in
@@ -97,11 +95,7 @@ class Exporter(object):
                                " which CVS cannot handle." %
                                ("', '".join(sorted(list(DirectoriesToFiles)))))
 
-        CVSMetaData = [x for x in AddedDirs if x == 'CVS' or x.endswith('/CVS')]
-        if CVSMetaData:
-            raise RuntimeError("Not exporting with CVS metadata included"
-                               " in Git repository: '%s'" %
-                               ' '.join(CVSMetaData))
+        self.assertNoCVSMetaData(AddedDirs)
 
         prefix = self.ctx.getBranchPrefix(repository, CVS.branch)
         if prefix:
@@ -128,6 +122,22 @@ class Exporter(object):
         # posthooks only after successfully pushing export- merge to origin
         CVS.runPostHooks()
         Git.runExpPostHooks(gitbranch)
+
+    @staticmethod
+    def getGitMessages(Git, branches, exportbranches, gitbranch, originExportBranch):
+        if (branches - exportbranches) == branches:
+            return 'Initial export to CVS from git branch %s' %gitbranch
+        else:
+            return Git.logmessages(originExportBranch, gitbranch)
+
+
+    @staticmethod
+    def assertNoCVSMetaData(AddedDirs):
+        CVSMetaData = [x for x in AddedDirs if x == 'CVS' or x.endswith('/CVS')]
+        if CVSMetaData:
+            raise RuntimeError("Not exporting with CVS metadata included"
+                               " in Git repository: '%s'" %
+                               ' '.join(CVSMetaData))
 
     def cloneGit(self, repository, Git, repoDir):
         if not os.path.exists(repoDir):
