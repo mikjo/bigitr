@@ -118,24 +118,18 @@ class TestGit(testutils.TestCase):
 
     def test_branch(self):
         with mock.patch('bigitr.git.shell.read') as r:
-            r.return_value = (0, '''
-* master
-  other
-''')
+            r.return_value = (0, 'master')
             branch = self.git.branch()
             r.assert_called_once_with(mock.ANY,
-                'git', 'branch')
+                'git', 'symbolic-ref', '--short', '-q', 'HEAD')
             self.assertEquals(branch, 'master')
 
     def test_branchOther(self):
         with mock.patch('bigitr.git.shell.read') as r:
-            r.return_value = (0, '''
-  master
-* other
-''')
+            r.return_value = (0, 'other')
             branch = self.git.branch()
             r.assert_called_once_with(mock.ANY,
-                'git', 'branch')
+                'git', 'symbolic-ref', '--short', '-q', 'HEAD')
             self.assertEquals(branch, 'other')
 
     def test_refs(self):

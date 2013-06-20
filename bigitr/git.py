@@ -53,12 +53,9 @@ class Git(object):
         return set()
 
     def branch(self):
-        _, branches = shell.read(self.log,
-            'git', 'branch')
-        if branches:
-            return [x.split()[1]
-                    for x in branches.strip().split('\n')
-                    if x.startswith('* ')][0]
+        _, branch = shell.read(self.log,
+            'git', 'symbolic-ref', '--short', '-q', 'HEAD')
+        return branch
 
     def refs(self):
         # no refs yet returns an error in normal operations
