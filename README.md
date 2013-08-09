@@ -667,7 +667,7 @@ A typical life cycle for Bigitr is envisioned to be something like:
   Git branches no longer need to be exported to CVS.
 
 * Bigitr is no longer required, and is therefore retired from active
-  user.
+  use.
 
 
 Contributing
