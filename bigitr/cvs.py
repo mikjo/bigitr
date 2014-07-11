@@ -61,6 +61,10 @@ def inCVSDIR(fn):
     return wrapper
 
 class CVS(object):
+    SYMBOLIC_BRANCH_MAP = {
+        '@{trunk}': None,
+        }
+
     def __init__(self, ctx, repo, branch):
         self.ctx = ctx
         self.repo = repo
@@ -68,6 +72,7 @@ class CVS(object):
         self.path = ctx.getCVSBranchCheckoutDir(repo, branch)
         self.pathbase = os.path.basename(self.path)
         self.branch = branch
+        self.mapped_branch = self.SYMBOLIC_BRANCH_MAP.get(branch, branch)
         self.log = self.ctx.logs[repo]
         self.root = ctx.getCVSRoot(repo)
 
@@ -85,14 +90,22 @@ class CVS(object):
 
     @setCVSROOT
     def export(self, targetDir):
-        shell.run(self.log,
-            'cvs', 'export', '-kk', '-d', targetDir, '-r', self.branch, self.location)
+        cmd = ['cvs', 'export', '-kk', '-d', targetDir]
+        if self.mapped_branch is not None:
+            cmd.extend(('-r', self.branch))
+        else:
+            cmd.extend(('-D', 'now'))
+        cmd.append(self.location)
+        shell.run(self.log, *cmd)
 
     @setCVSROOT
     @inCVSDIR
     def checkout(self):
-        shell.run(self.log,
-            'cvs', 'checkout', '-kk', '-d', self.pathbase, '-r', self.branch, self.location)
+        cmd = ['cvs', 'checkout', '-kk', '-d', self.pathbase]
+        if self.mapped_branch is not None:
+            cmd.extend(('-r', self.branch))
+        cmd.append(self.location)
+        shell.run(self.log, *cmd)
 
     @inCVSPATH
     def infoDiff(self):
@@ -135,7 +148,10 @@ class CVS(object):
         # flat list: ['-s', 'A=a', '-s', 'B=b']
         cvsvars = sum([['-s', x]
                        for x in self.ctx.getCVSVariables(self.repo)], [])
-        commitargs = ['commit', '-r', self.branch, '-R', '-F', name]
+        if self.mapped_branch is not None:
+            commitargs = ['commit', '-r', self.branch, '-R', '-F', name]
+        else:
+            commitargs = ['commit', '-R', '-F', name]
         try:
             shell.run(self.log, 'cvs', *(cvsvars + commitargs))
         finally:

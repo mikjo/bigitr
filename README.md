@@ -60,8 +60,7 @@ same time, the results are undefined.
 
 Bigitr imports branches from CVS into special import branches (with
 names starting with "cvs-") in Git.  It also exports branches in
-Git into branches in CVS.  It will not touch the CVS trunk (at
-least at this time).
+Git into branches in CVS.
 
 Note: It will not synchronize only parts of a CVS `sub/module`.  It is
 all or nothing: for any particular `sub/module`, any files not in
@@ -343,6 +342,11 @@ sections in that file.
     posthook.imp.git.<branch> = <command> <args> # hook to run in Git clone after committing to Git branch <branch> from CVS
     posthook.exp.git.<branch> = <command> <args> # hook to run in Git clone after committing to CVS from Git branch <branch>
     posthook.cvs.<branch> = <command> <args> # hook to run in CVS checkout after committing to CVS branch <branch>
+
+`<branch>` may refer to either a "real" branch name, or a symbolic
+branch. Symbolic branches are used to configure branches that cannot
+be referenced directly. Currently, the only symbolic branch supported
+by bigitr is `@{trunk}`, which is used to refer to the CVS trunk.
 
 The `gitroot`, `cvsroot`, `email`, `skeleton` keys, and general
 (non-branch-specific) hooks, may be in the `GLOBAL` section. Entries

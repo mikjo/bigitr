@@ -1406,3 +1406,84 @@ class TestStoryCommands(WorkDir):
             while (os.path.exists(self.pidfile) and util.kill(pid, 0)):
                 time.sleep(0.01)
             self.assertNoTracebackLogs()
+
+
+class TestStoryCVSTrunk(WorkDir):
+    def setUp(self):
+        WorkDir.setUp(self)
+        self.repConfigText = ('[GLOBAL]\n'
+                              'cvsroot = %s\n'
+                              'gitroot = %s/\n'
+                              '[git/module1]\n'
+                              'cvspath = module1\n'
+                              'cvs.@{trunk} = trunk\n'
+                              'git.master = @{trunk}\n'
+                              % (self.cvsroot,
+                                 self.gitroot,
+                                 )
+                              )
+        appConfig = StringIO(self.appConfigText)
+        repConfig = StringIO(self.repConfigText)
+        self.ctx = context.Context(appConfig, repConfig)
+
+    def test_trunk1_import(self):
+        '''test import of cvs trunk'''
+        self.unpack('TESTROOT.1.tar.gz')
+        imp = cvsimport.Importer(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVS = cvs.CVS(self.ctx, 'git/module1', '@{trunk}')
+
+        # the tool otherwise assumes that the remote repository exists
+        os.system('git init --bare %s/git/module1' %self.gitroot)
+
+        # test import main
+        imp.importcvs('git/module1', Git, CVS, '@{trunk}', 'cvs-trunk')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/trunk.1'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/.gitignore'))
+
+        # test with no changes in CVS
+        imp.importcvs('git/module1', Git, CVS, '@{trunk}', 'cvs-trunk')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertFalse(os.path.exists(self.gitdir + '/module1/trunk.1'))
+
+        os.system('cd %s; CVSROOT=%s cvs co module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/trunk.1', 'w').write('trunk.1\n')
+        os.system('cd %s/module1; cvs add trunk.1; cvs commit -m "add trunk.1"'
+                  %self.cvsco)
+
+        imp.importcvs('git/module1', Git, CVS, '@{trunk}', 'cvs-trunk')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/trunk.1'))
+        self.assertEqual(file(self.gitdir + '/module1/trunk.1').read(),
+            'trunk.1\n')
+
+        # now test with no changes in CVS
+        imp.importcvs('git/module1', Git, CVS, '@{trunk}', 'cvs-trunk')
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/1'))
+        self.assertTrue(os.path.exists(self.gitdir + '/module1/trunk.1'))
+        self.assertEqual(file(self.gitdir + '/module1/trunk.1').read(),
+            'trunk.1\n')
+
+        self.pack('TESTROOT.TRUNK.2.tar.gz')
+
+    def test_trunk2_export(self):
+        '''test export of git master to cvs trunk'''
+        self.unpack('TESTROOT.TRUNK.2.tar.gz')
+        exp = gitexport.Exporter(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVS = cvs.CVS(self.ctx, 'git/module1', '@{trunk}')
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout master; '
+                  'git merge --no-edit --commit origin/cvs-trunk; '
+                  'echo "trunk.2" > trunk.2; '
+                  'git add trunk.2; '
+                  'git commit -a -m "added trunk.2"; '
+                  'git push --all; '
+                  %self.gitco)
+        exp.exportgit('git/module1', Git, CVS, 'master', 'export-master')
+        self.assertTrue('@trunk.2' in
+                        file(self.cvsroot+'/module1/trunk.2,v').read())

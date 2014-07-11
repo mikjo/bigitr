@@ -269,3 +269,93 @@ class TestCVS(testutils.TestCase):
                 mock.call(mock.ANY, 'postcommand', 'arg'),
                 mock.call(mock.ANY, 'postcommand', 'brnch'),
             ])
+
+
+class TestCVSTrunk(testutils.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp(suffix='.bigitr')
+        self.cdir = tempfile.mkdtemp(suffix='.bigitr')
+        self.fdir = '%s/repo/@{trunk}/Loc' %self.cdir
+        os.makedirs(self.fdir)
+        if 'CVSROOT' in os.environ:
+            self.cvsroot = os.environ['CVSROOT']
+        else:
+            self.cvsroot = None
+        os.unsetenv('CVSROOT')
+        with mock.patch('bigitr.log.Log') as mocklog:
+            appConfig = StringIO('[global]\n'
+                                 'logdir = /logs\n'
+                                 'gitdir = %s\n'
+                                 '[export]\n'
+                                 'cvsdir = %s\n' %(self.dir, self.cdir))
+            repConfig = StringIO('[GLOBAL]\n'
+                                 '[repo]\n'
+                                 'cvsroot = asdf\n'
+                                 'cvspath = Some/Loc\n'
+                                 'prehook.cvs = precommand arg\n'
+                                 'posthook.cvs = postcommand arg\n'
+                                 'prehook.cvs.@{trunk} = precommand trunk\n'
+                                 'posthook.cvs.@{trunk} = postcommand trunk\n'
+                                 '\n')
+            self.ctx = context.Context(appConfig, repConfig)
+            self.cvs = cvs.CVS(self.ctx, 'repo', '@{trunk}')
+            self.mocklog = mocklog()
+
+    def tearDown(self):
+        self.removeRecursive(self.dir)
+        self.removeRecursive(self.cdir)
+        if self.cvsroot:
+            os.environ['CVSROOT'] = self.cvsroot
+        else:
+            os.unsetenv('CVSROOT')
+
+    def test_export(self):
+        with mock.patch('bigitr.git.shell.run'):
+            self.cvs.export('targetdir')
+            shell.run.assert_called_once_with(mock.ANY,
+                'cvs', 'export', '-kk', '-d', 'targetdir', '-D', 'now', 'Some/Loc')
+            self.assertEqual(os.environ['CVSROOT'],
+                self.ctx.getCVSRoot('repo'))
+
+    def test_checkout(self):
+        with mock.patch('bigitr.git.shell.run'):
+            with mock.patch.multiple('os', getcwd=mock.DEFAULT,
+                                           chdir=mock.DEFAULT):
+                self.cvs.checkout()
+                shell.run.assert_called_once_with(mock.ANY,
+                    'cvs', 'checkout', '-kk', '-d', 'Loc', 'Some/Loc')
+                self.assertEqual(os.environ['CVSROOT'],
+                    self.ctx.getCVSRoot('repo'))
+
+    @mock.patch('bigitr.util.removeRecursive')
+    def test_commit(self, rR):
+        with mock.patch('bigitr.git.shell.run'):
+            with mock.patch.multiple('os', remove=mock.DEFAULT,
+                                           close=mock.DEFAULT,
+                                           rmdir=mock.DEFAULT,
+                                           write=mock.DEFAULT) as mockos:
+                with mock.patch('tempfile.mkstemp') as mockmkstemp:
+                    mockmkstemp.return_value = (123456789, '/notThere')
+                    self.cvs.commit('commitMessage')
+                    mockos['write'].assert_called_once_with(123456789, 'commitMessage')
+                    mockmkstemp.assert_called_once_with('.bigitr')
+                    shell.run.assert_called_once_with(mock.ANY,
+                        'cvs', 'commit', '-R', '-F', '/notThere')
+                    mockos['remove'].assert_called_once_with('/notThere')
+                    mockos['close'].assert_called_once_with(123456789)
+                    rR.assert_not_called()
+                    mockos['rmdir'].assert_not_called(mock.ANY)
+
+    def test_runPreHooks(self):
+        with mock.patch('bigitr.git.shell.run'):
+            self.cvs.runPreHooks()
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'precommand', 'trunk'),
+            ])
+
+    def test_runPostHooks(self):
+        with mock.patch('bigitr.git.shell.run'):
+            self.cvs.runPostHooks()
+            shell.run.assert_has_calls([
+                mock.call(mock.ANY, 'postcommand', 'trunk'),
+            ])
