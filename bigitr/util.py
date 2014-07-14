@@ -31,6 +31,7 @@ def copyFiles(sourceDir, baseDir, fileNames):
         if not os.path.exists(targetDir):
             os.makedirs(targetDir)
         file(targetFile, 'w').write(file(sourceFile).read())
+        os.chmod(targetFile, os.stat(sourceFile).st_mode)
 
 def copyTree(source, target):
     for dirpath, dirnames, filenames in os.walk(source):

@@ -32,9 +32,14 @@ class TestUtil(testutils.TestCase):
         file(self.s+'/a', 'w').write('a')
         file(self.s+'/b', 'w').write('b')
         file(self.s+'/dir/metoo', 'w').write('metoo')
+        self.weirdMode = 0676
+        os.chmod(self.s+'/dir/metoo', self.weirdMode)
 
     def tearDown(self):
         self.removeRecursive(self.d)
+
+    def assertMode(self, path, mode):
+        self.assertEqual(os.stat(path).st_mode & 0777, self.weirdMode)
 
     def test_copyFiles(self):
         util.copyFiles(self.s, self.t, ['/a', '/b', '/dir/metoo'])
@@ -44,6 +49,7 @@ class TestUtil(testutils.TestCase):
         self.assertEqual(file(self.t + '/a').read(), 'a')
         self.assertEqual(file(self.t + '/b').read(), 'b')
         self.assertEqual(file(self.t + '/dir/metoo').read(), 'metoo')
+        self.assertMode(self.t + '/dir/metoo', self.weirdMode)
 
     def test_copyTree(self):
         util.copyTree(self.s, self.t)
@@ -53,6 +59,7 @@ class TestUtil(testutils.TestCase):
         self.assertEqual(file(self.t + '/a').read(), 'a')
         self.assertEqual(file(self.t + '/b').read(), 'b')
         self.assertEqual(file(self.t + '/dir/metoo').read(), 'metoo')
+        self.assertMode(self.t + '/dir/metoo', self.weirdMode)
 
     def test_removeRecursive(self):
         util.removeRecursive(self.s)
