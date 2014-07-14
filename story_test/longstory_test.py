@@ -544,8 +544,7 @@ class TestStoryAPI(WorkDir):
         os.system('cd %s/module1 && '
                   'git checkout cvs-b2 &&'
                   'git branch b2 && '
-                  'git push origin b2; '
-                  'git branch --set-upstream b2 origin/b2; '
+                  'git push --set-upstream origin b2; '
                   %self.gitco)
 
         os.system('cd %s; CVSROOT=%s cvs co -r b1 module1'
