@@ -51,16 +51,6 @@ class TestUtil(testutils.TestCase):
         self.assertEqual(file(self.t + '/dir/metoo').read(), 'metoo')
         self.assertMode(self.t + '/dir/metoo', self.weirdMode)
 
-    def test_copyTree(self):
-        util.copyTree(self.s, self.t)
-        self.assertTrue(os.path.exists(self.t + '/a'))
-        self.assertTrue(os.path.exists(self.t + '/b'))
-        self.assertTrue(os.path.exists(self.t + '/dir/metoo'))
-        self.assertEqual(file(self.t + '/a').read(), 'a')
-        self.assertEqual(file(self.t + '/b').read(), 'b')
-        self.assertEqual(file(self.t + '/dir/metoo').read(), 'metoo')
-        self.assertMode(self.t + '/dir/metoo', self.weirdMode)
-
     def test_removeRecursive(self):
         util.removeRecursive(self.s)
         self.assertEqual(util.listFiles(self.s), [])

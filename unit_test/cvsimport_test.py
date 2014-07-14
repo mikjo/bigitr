@@ -72,7 +72,6 @@ class CVSImportTest(testutils.TestCase):
 
     @mock.patch('bigitr.gitmerge.Merger')
     @mock.patch('bigitr.util.copyFiles')
-    @mock.patch('bigitr.util.copyTree')
     @mock.patch('time.asctime')
     @mock.patch('os.remove')
     @mock.patch('bigitr.util.listFiles')
@@ -80,7 +79,7 @@ class CVSImportTest(testutils.TestCase):
     @mock.patch('os.makedirs')
     @mock.patch('os.chdir')
     @mock.patch('os.rmdir')
-    def test_importcvs(self, rmdir, cd, md, pe, lF, rm, at, cT, cF, M):
+    def test_importcvs(self, rmdir, cd, md, pe, lF, rm, at, cF, M):
         self.Git.branches.return_value = ['b1', 'master']
         self.Git.listContentFiles.return_value = ['a']
         at.return_value = 'TIME'
@@ -90,7 +89,11 @@ class CVSImportTest(testutils.TestCase):
         self.Git.initializeGitRepository.assert_called()
         self.Git.checkoutNewImportBranch.assert_called_once_with('cvs-b1')
         self.Git.pristine.assert_called_once_with()
-        cF.assert_called_once_with('/skel', '/gitdir/repo2', mock.ANY)
+        cF.assert_has_calls([
+            mock.call('/cvsdir/repo2/Loc', '/gitdir/repo2', mock.ANY),
+            mock.call('/skel', '/gitdir/repo2', mock.ANY),
+        ])
+        self.assertEquals(cF.call_count, 2)
         self.Git.runImpPreHooks.assert_called_once_with('cvs-b1')
         self.Git.infoStatus.assert_called_once_with()
         self.Git.infoDiff.assert_called_once_with()

@@ -90,7 +90,7 @@ class Importer(object):
 
         os.chdir(gitDir)
 
-        util.copyTree(exportDir, repoDir)
+        util.copyFiles(exportDir, repoDir, exportedFiles)
 
         if addSkeleton:
             if skeleton:

@@ -33,13 +33,6 @@ def copyFiles(sourceDir, baseDir, fileNames):
         file(targetFile, 'w').write(file(sourceFile).read())
         os.chmod(targetFile, os.stat(sourceFile).st_mode)
 
-def copyTree(source, target):
-    for dirpath, dirnames, filenames in os.walk(source):
-        targetDir = '/'.join((target, dirpath[len(source):]))
-        if not os.path.exists(targetDir):
-            os.makedirs(targetDir)
-        copyFiles(dirpath, targetDir, filenames)
-
 def removeRecursive(dir):
     for b, dirs, files in os.walk(dir, topdown=False):
         for f in files:
