@@ -92,15 +92,63 @@ exported to an existing CVS branch, then you should populate the
 Git "master" branch before exporting.
 
 Any branch that you export from Git to CVS, including master,
-must be populated before you export it.  You may populated it
+must be populated before you export it.  You may populate it
 by merging from a branch imported from CVS, either manually or
 by configuring an automatic merge.
 
 Files in CVS ignored by .gitignore will not be committed to the
 corresponding Git branches, and if those .gitignore changes are
 represented on a branch being exported from Git into CVS, those
-files will be deleted from the CVS branch when the Git branch
-is exported to CVS.
+files may be deleted from the CVS branch when the Git branch is
+exported to CVS if Bigitr cannot parse the .gitignore line that
+caused the file to be deleted in CVS.
+
+Bigitr handles a subset of the .cvsignore and .gitignore files,
+using syntax that is effectively common between them in normal
+use.  In theory, the formats are wildly incompatible; for example,
+Git takes one expression per line and CVS has space-separated
+words with no accomodation for filenames with spaces in them,
+and Git has extended globs that use `**` for multiple directories.
+In practice, most usage is a single glob expression per line,
+and either a glob matched only against the filename if the entry
+has no `/` character, or a glob matched against the whole path
+if it has a `/`.
+
+Bigitr makes some use of only this sufficiently common syntax between
+.cvsignore and .gitignore, and only for .cvsignore and .gitignore
+files at the root of the module or repository, respectively.
+When exporting from Git to CVS or importing from CVS into Git,
+bigitr uses the ignore file in the source to determine which files
+to leave alone in the target:
+
+* Files in CVS that match entries in the corresponding .gitignore
+  file in Git, bigitr will not delete in CVS when exporting from Git
+  to CVS.
+
+* Files in Git that match entries in the corresponding .cvsignore
+  file in CVS, bigitr will not delete in Git when importing from CVS
+  into Git.
+
+Therefore, a file that exists in CVS before an import operation is
+started, but which is ignored in .gitignore in Git, will not be
+imported into Git.  Then when Git is exported into CVS, the file
+will be preserved in CVS even though it is not present in Git.
+Similarly, if a file is present in Git, but is ignored in CVS using
+.cvsignore and therefore not commited to CVS, it will not be removed
+from Git when it is imported into Git.
+
+This is currently true only for contents of a .cvsignore or a
+.gitignore at the root of a Git repository, or the root of the
+CVS module being synced.  It is true only for lines that bigitr
+understands, which is the limited common syntax described here.
+(Future versions of Bigitr may extend this to recognizing more
+of .gitignore and .cvsignore, including non-root locations. Do
+not depend on Bigitr to delete ignored content through any
+mechanism.)
+
+Whenever Bigitr chooses not to delete a file when syncing to a target
+location, the stderr log for the operation will list the file name and
+all ignore lines that would prevent it from being deleted.
 
 Files with names starting with ".git" will not be commited to CVS;
 that file namespace is reserved for Git, even for Git metadata file

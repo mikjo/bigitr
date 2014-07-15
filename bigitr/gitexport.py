@@ -20,6 +20,7 @@ import time
 from bigitr import errhandler
 from bigitr import cvs
 from bigitr import git
+from bigitr import ignore
 from bigitr import util
 
 class Exporter(object):
@@ -172,6 +173,7 @@ class Exporter(object):
         return branches
 
     def calculateFileSets(self, CVS, Git):
+        gitignore = ignore.Ignore(Git.log, '.gitignore')
         CVSList = CVS.listContentFiles()
         CVSFileSet = set(CVSList)
         GitList = Git.listContentFiles()
@@ -180,6 +182,8 @@ class Exporter(object):
         # even if .cvsignore files are deleted in git, do not remove them in CVS
         DeletedFiles -= set(x for x in DeletedFiles
                             if x.split('/')[-1] == '.cvsignore')
+        # do not delete from CVS files that are specified in .gitignore
+        DeletedFiles = gitignore.filter(DeletedFiles)
         AddedFiles = GitFileSet - CVSFileSet
         CommonFiles = GitFileSet.intersection(CVSFileSet)
         GitDirs = set(os.path.dirname(x) for x in GitFileSet)

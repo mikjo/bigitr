@@ -272,8 +272,9 @@ class TestStoryAPI(WorkDir):
             self.cvsdir + '/module2/b1/module2/.cvsignore'))
         self.assertTrue(os.path.exists(
             self.cvsdir + '/module2/b1/module2/ignore/.cvsignore'))
-        # make sure that bad.jar WAS deleted from CVS when we exported
-        self.assertFalse(os.path.exists(
+        # make sure that bad.jar WAS NOT deleted from CVS when we exported
+        # issues/#16
+        self.assertTrue(os.path.exists(
             self.cvsdir + '/module2/b1/module2/bad.jar'))
         # make sure that .gitignore and .gitattributes were not copied to CVS
         self.assertFalse(os.path.exists(
@@ -1234,8 +1235,9 @@ class TestStoryCommands(WorkDir):
             self.cvsdir + '/module2/b1/module2/.cvsignore'))
         self.assertTrue(os.path.exists(
             self.cvsdir + '/module2/b1/module2/ignore/.cvsignore'))
-        # make sure that bad.jar WAS deleted from CVS when we exported
-        self.assertFalse(os.path.exists(
+        # make sure that bad.jar WAS NOT deleted from CVS when we exported
+        # issues/#16
+        self.assertTrue(os.path.exists(
             self.cvsdir + '/module2/b1/module2/bad.jar'))
         # make sure that .gitignore and .gitattributes were not copied to CVS
         self.assertFalse(os.path.exists(

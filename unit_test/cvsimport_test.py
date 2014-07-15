@@ -70,6 +70,7 @@ class CVSImportTest(testutils.TestCase):
             self.assertRaises(ZeroDivisionError,
                 self.imp.importBranches, 'repo', mock.Mock())
 
+    @mock.patch('bigitr.ignore.Ignore.parse')
     @mock.patch('bigitr.gitmerge.Merger')
     @mock.patch('bigitr.util.copyFiles')
     @mock.patch('time.asctime')
@@ -79,7 +80,7 @@ class CVSImportTest(testutils.TestCase):
     @mock.patch('os.makedirs')
     @mock.patch('os.chdir')
     @mock.patch('os.rmdir')
-    def test_importcvs(self, rmdir, cd, md, pe, lF, rm, at, cF, M):
+    def test_importcvs(self, rmdir, cd, md, pe, lF, rm, at, cF, M, Ip):
         self.Git.branches.return_value = ['b1', 'master']
         self.Git.listContentFiles.return_value = ['a']
         at.return_value = 'TIME'

@@ -21,6 +21,7 @@ from bigitr import cvs
 from bigitr import errhandler
 from bigitr import git
 from bigitr import gitmerge
+from bigitr import ignore
 from bigitr import util
 
 class Importer(object):
@@ -56,6 +57,7 @@ class Importer(object):
         os.makedirs(exportDir)
         os.chdir(os.path.dirname(exportDir))
         CVS.export(os.path.basename(exportDir))
+        cvsignore = ignore.Ignore(Git.log, exportDir + '/.cvsignore')
         exportedFiles = util.listFiles(exportDir)
         if not exportedFiles:
             raise RuntimeError("CVS branch '%s' for location '%s' contains no files"
@@ -85,7 +87,9 @@ class Importer(object):
         # that we can change branches
         Git.pristine()
 
-        for filename in Git.listContentFiles():
+        gitFiles = Git.listContentFiles()
+        gitFiles = sorted(list(cvsignore.filter(set(gitFiles))))
+        for filename in gitFiles:
             os.remove(filename)
 
         os.chdir(gitDir)
