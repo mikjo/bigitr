@@ -36,7 +36,7 @@ class TestIgnore(testutils.TestCase):
     @mock.patch('bigitr.ignore.Ignore.parse')
     def test_empty_init(self, parse):
         i = ignore.Ignore(self.log, self.ignorefile)
-        self.assertIsNone(i.ignores)
+        self.assertEquals(i.ignores, None)
         self.assertEquals(i.fileName, os.path.basename(self.ignorefile))
         self.assertEquals(self.log, i.log)
         parse.assert_called_once_with(self.ignorefile)

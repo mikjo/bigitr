@@ -185,8 +185,7 @@ once with cached testdata:
     make alltests
     make alltests
 
-Bigitr must function correctly on Python 2.6, and is expected also
-to function correctly on Python 2.7.
+Bigitr must function correctly on both Python 2.6 and Python 2.7.
 
 
 License
