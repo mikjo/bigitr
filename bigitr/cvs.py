@@ -90,11 +90,9 @@ class CVS(object):
 
     @setCVSROOT
     def export(self, targetDir):
-        cmd = ['cvs', 'export', '-kk', '-d', targetDir]
+        cmd = ['cvs', 'export', '-kk', '-d', targetDir, '-D', 'now']
         if self.mapped_branch is not None:
             cmd.extend(('-r', self.branch))
-        else:
-            cmd.extend(('-D', 'now'))
         cmd.append(self.location)
         shell.run(self.log, *cmd)
 

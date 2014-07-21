@@ -80,7 +80,7 @@ class TestCVS(testutils.TestCase):
         with mock.patch('bigitr.git.shell.run'):
             self.cvs.export('targetdir')
             shell.run.assert_called_once_with(mock.ANY,
-                'cvs', 'export', '-kk', '-d', 'targetdir', '-r', 'brnch', 'Some/Loc')
+                'cvs', 'export', '-kk', '-d', 'targetdir', '-D', 'now', '-r', 'brnch', 'Some/Loc')
             self.assertEqual(os.environ['CVSROOT'],
                 self.ctx.getCVSRoot('repo'))
 
