@@ -17,9 +17,12 @@
 all:
 	true
 
-clean:
+clean: testclean
 	find bigitr *_test -name \*.pyc | xargs --no-run-if-empty rm
 	rm -f .coverage
+
+testclean:
+	cd testdata && ls -1 | grep -v TESTROOT.1.tar.gz | xargs --no-run-if-empty rm
 
 # override for automated test runs that should not drop into
 # the debugger when the code has an error

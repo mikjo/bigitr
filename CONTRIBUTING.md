@@ -141,6 +141,18 @@ are invoked with `make story`, the unit and story tests are serially
 but separately invoked with `make tests`, and all the tests are invoked
 together with `make alltests`.
 
+The story tests cannot be run individually until after they are run
+sequentially.  The file testdata/TESTROOT.1.tar.gz is included in
+the repository to bootstrap the process, and other TESTROOT files
+in testdata (required for subsequent story tests) are generated
+when the story tests are run.  The .gitignore file ignores all
+changes; the TESTROOT.1.tar.gz file should not be changed, and
+the other files should never be committed to the Git repository.
+If you have a major update to Git or CVS and tests fail, or if
+you experience failing tests the first time you run the test suite
+(when the cache files are initially generated), you should delete
+the cached TESTROOT files by running `make testclean`.
+
 
 Contributing Code to Bigitr
 ---------------------------
@@ -165,7 +177,13 @@ Contributions which include modifications to the source code are
 requested to include appropriate tests for the changes.  New or
 modified tests should cover all of the changed and affected code,
 maintaining 100% unit test code coverage as well as 100% coverage
-of normal logic in story tests.
+of normal logic in story tests.  To make sure that story tests work
+correctly both with and without cached testdata, please purge the
+cache and run all tests twice; once without cached testdata and
+once with cached testdata:
+    make testclean
+    make alltests
+    make alltests
 
 Bigitr must function correctly on Python 2.6, and is expected also
 to function correctly on Python 2.7.

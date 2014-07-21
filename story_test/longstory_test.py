@@ -1289,13 +1289,25 @@ class TestStoryCommands(WorkDir):
 
     def test_other_commands(self):
         self.unpack('TESTROOT.5.tar.gz')
-        # create missing branch
+        # create missing branches
+        os.system('cd %s; CVSROOT=%s cvs co -r b1 module3'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module3/garbage', 'w').write('garbage\n')
+        os.system('cd %s/module3; cvs add garbage; cvs commit -m "add garbage"'
+                  %self.cvsco)
         os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
         os.system('cd %s/module1 && '
                   'git checkout cvs-b2 &&'
                   'git branch b2 && '
-                  'git push origin b2; '
-                  'git branch --set-upstream b2 origin/b2; '
+                  'git push --set-upstream origin b2; '
+                  %self.gitco)
+        os.system('cd %s; git clone %s/git/module3' %(self.gitco, self.gitroot))
+        os.system('cd %s/module3 && '
+                  'git checkout master &&'
+                  'echo newmaster > newmasterfile &&'
+                  'git add newmasterfile &&'
+                  'git commit -m newmasterfile &&'
+                  'git push origin master; '
                   %self.gitco)
 
         file(self.repCfgname, 'w').write(
