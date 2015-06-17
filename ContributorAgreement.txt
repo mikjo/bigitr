@@ -1,14 +1,14 @@
 Contributor Agreement
 
-Version 1.0
+Version 1.1
 
-Contributions of changes to this software are accepted only when they
-are properly accompanied by a Contributor Agreement. The Contributor
+Contributions to this software are accepted only when they are
+properly accompanied by a Contributor Agreement. The Contributor
 Agreement for this software is the Developer's Certificate of Origin
 1.1 (DCO) as provided with and required for accepting contributions
 to the Linux kernel.
 
-In each change proposed to be included in this software, the
+In each contribution proposed to be included in this software, the
 developer must include a "sign-off" that denotes consent to the
 terms of the Developer's Certificate of Origin.  The sign-off is
 a line of text in the description that accompanies the change,
