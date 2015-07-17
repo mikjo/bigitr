@@ -967,6 +967,45 @@ class TestStoryAPI(WorkDir):
         self.assertTrue('rootfile' in
             file(self.cvsroot+'/module1/Attic/rootfile,v').read())
 
+    def test_lowlevel6LimitedSync(self):
+        'test syncing to CVS only files mentioned in .bigitrsync in CVS'
+        self.unpack('TESTROOT.6.tar.gz')
+        exp = gitexport.Exporter(self.ctx)
+        imp = cvsimport.Importer(self.ctx)
+        Git = git.Git(self.ctx, 'git/module1')
+        CVSb2 = cvs.CVS(self.ctx, 'git/module1', 'b2')
+
+        os.system('cd %s; CVSROOT=%s cvs co -r b2 module1'
+                  %(self.cvsco, self.cvsroot))
+        file(self.cvsco + '/module1/ignore', 'w')
+        file(self.cvsco + '/module1/sync', 'w').write('old\n')
+        file(self.cvsco + '/module1/delete', 'w')
+        file(self.cvsco + '/module1/.bigitrsync', 'w').write(
+            '^[sS]yn.*$\n.*elet.*\n')
+        os.system('cd %s/module1; '
+                  'cvs add ignore sync delete .bigitrsync; '
+                  'cvs commit -m "add .bigitrsync etc"'
+                  %self.cvsco)
+
+        os.system('cd %s; git clone %s/git/module1' %(self.gitco, self.gitroot))
+        os.system('cd %s/module1; '
+                  'git checkout master; '
+                  'echo new > sync; '
+                  'touch sync2; '
+                  'git add sync sync2; '
+                  'git commit -m "add sync files"; '
+                  'git push --all; '
+                  %self.gitco)
+
+        exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
+        os.system('cd %s/module1; '
+                  'cvs up; '
+                  %self.cvsco)
+        self.assertEqual(file(self.cvsco + '/module1/sync').read(), 'new\n')
+        self.assertTrue(os.path.exists(self.cvsco + '/module1/sync2'))
+        self.assertTrue(os.path.exists(self.cvsco + '/module1/ignore'))
+        self.assertFalse(os.path.exists(self.cvsco + '/module1/delete'))
+
     def test_lowlevel6GitHasCVSDirs(self):
         'test export from Git fails if CVS metadata checked into Git'
         self.unpack('TESTROOT.6.tar.gz')

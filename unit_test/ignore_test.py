@@ -36,7 +36,7 @@ class TestIgnore(testutils.TestCase):
     @mock.patch('bigitr.ignore.Ignore.parse')
     def test_empty_init(self, parse):
         i = ignore.Ignore(self.log, self.ignorefile)
-        self.assertEquals(i.ignores, None)
+        self.assertEquals(i.patterns, None)
         self.assertEquals(i.fileName, os.path.basename(self.ignorefile))
         self.assertEquals(self.log, i.log)
         parse.assert_called_once_with(self.ignorefile)
@@ -44,18 +44,18 @@ class TestIgnore(testutils.TestCase):
     def test_init(self):
         file(self.ignorefile, 'w').write('*.o\n#comment\n/path/to/foo\n')
         i = ignore.Ignore(self.log, self.ignorefile)
-        self.assertEquals(i.ignores, ['*.o', '/path/to/foo'])
+        self.assertEquals(i.patterns, ['*.o', '/path/to/foo'])
         self.assertEquals(i.fileName, os.path.basename(self.ignorefile))
 
     @mock.patch('os.write')
     def test_match(self, write):
         i = ignore.Ignore(self.log, self.ignorefile)
-        self.assertEquals(i.match('*.o', ['foo.c', 'foo.o']),
+        self.assertEquals(i.match('ignores', '*.o', ['foo.c', 'foo.o']),
             set(('foo.o',)))
         write.assert_called_once_with(mock.ANY,
             'ignore: *.o ignores file foo.o\n')
         write.reset_mock()
-        self.assertEquals(i.match('/path/*.o', ['foo.o', '/path/foo.o']),
+        self.assertEquals(i.match('ignores', '/path/*.o', ['foo.o', '/path/foo.o']),
             set(('/path/foo.o',)))
         write.assert_called_once_with(mock.ANY,
             'ignore: /path/*.o ignores file /path/foo.o\n')
@@ -76,3 +76,41 @@ class TestIgnore(testutils.TestCase):
             'ignore: /path/to/foo ignores file /path/to/foo\n',
             'ignore: /dir/foo.o ignores file /dir/foo.o\n',
         ])
+
+    def test_includeEmpty(self):
+        'tests explicitly including files instead'
+        includefile = self.codedir + '/include'
+        logFile = self.logdir + '/log'
+        self.log.stderr = os.open(logFile, os.O_CREAT|os.O_RDWR, 0700)
+        i = ignore.Ignore(self.log, includefile, regex=True)
+        ret = i.include([
+            'foo.c', 'foo.o',
+            '/foo.h', '/dir/foo.c', '/dir/foo.o',
+        ])
+        os.close(self.log.stderr)
+        self.assertEquals(file(logFile).readlines(), [])
+        self.assertEquals(ret, [
+            'foo.c', 'foo.o',
+            '/foo.h', '/dir/foo.c', '/dir/foo.o',
+        ])
+
+    def test_include(self):
+        'tests explicitly including files instead'
+        includefile = self.codedir + '/include'
+        file(includefile, 'w').write('.*\\.c\n.*\\.h\n')
+        logFile = self.logdir + '/log'
+        self.log.stderr = os.open(logFile, os.O_CREAT|os.O_RDWR, 0700)
+        i = ignore.Ignore(self.log, includefile, regex=True)
+        ret = i.include([
+            'foo.c', 'foo.o',
+            '/foo.h', '/dir/foo.c', '/dir/foo.o',
+        ])
+        os.close(self.log.stderr)
+        self.assertEquals(file(logFile).readlines(), [
+            'include: .*\\.c includes file foo.c\n',
+            'include: .*\\.c includes file /dir/foo.c\n',
+            'include: .*\\.h includes file /foo.h\n',
+        ])
+        self.assertEquals(ret, set([
+            'foo.c', '/foo.h', '/dir/foo.c',
+        ]))

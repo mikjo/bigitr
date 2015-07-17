@@ -174,11 +174,19 @@ class Exporter(object):
 
     def calculateFileSets(self, CVS, Git):
         gitignore = ignore.Ignore(Git.log, '.gitignore')
+        gitDir = self.ctx.getGitDir()
+        bigitrsync = ignore.Ignore(Git.log, CVS.path + '/.bigitrsync', regex=True)
         CVSList = CVS.listContentFiles()
         CVSFileSet = set(CVSList)
+        CVSFileSet.discard('.bigitrsync')
         GitList = Git.listContentFiles()
         GitFileSet = set(GitList)
+        GitFileSet.discard('.bigitrsync')
+        # Sync only explicitly requested files
+        GitFileSet = bigitrsync.include(GitFileSet)
         DeletedFiles = CVSFileSet - GitFileSet
+        # delete only files matching the sync expressions
+        DeletedFiles = bigitrsync.include(DeletedFiles)
         # even if .cvsignore files are deleted in git, do not remove them in CVS
         DeletedFiles -= set(x for x in DeletedFiles
                             if x.split('/')[-1] == '.cvsignore')

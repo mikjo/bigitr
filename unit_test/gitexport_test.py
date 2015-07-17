@@ -47,6 +47,7 @@ class GitExportTest(testutils.TestCase):
                 self.exp = gitexport.Exporter(self.ctx)
                 self.Git = mock.Mock()
                 self.CVS = mock.Mock()
+                self.CVS.path = '/gitdir'
 
     def tearDown(self):
         pass
@@ -301,6 +302,41 @@ class GitExportTest(testutils.TestCase):
         self.assertEqual(C, set(()))
         self.assertEqual(DD, set(('a',)))
         self.assertEqual(AD, set())
+
+    @mock.patch('bigitr.ignore.Ignore')
+    def test_calculateFileSetsSync(self, I):
+        # as if .bigitrsync contains two lines:
+        # syncme.*
+        # deleteme.*
+        self.CVS.listContentFiles.return_value = [
+            '.bigitrsync',
+            'ignoreme',
+            'syncme',
+            'deleteme',
+        ]
+        self.Git.listContentFiles.return_value = [
+            '.bigitrsync',
+            'syncme',
+            'syncme2',
+            'ignoreme2',
+        ]
+        I().include.side_effect = [
+            set(['syncme', 'syncme2']), # "syncme.*" matches git
+            set(['deleteme']), # "deleteme.*" matches CVS; not present in Git
+        ]
+        I().filter.side_effect = lambda x: x
+        G, D, AF, C, DD, AD = self.exp.calculateFileSets(self.CVS, self.Git)
+        self.assertEqual(G, set(['syncme', 'syncme2'])) # not ignoreme2
+        self.assertEqual(D, set(['deleteme']))
+        self.assertEqual(AF, set(['syncme2']))
+        self.assertEqual(C, set(['syncme']))
+        self.assertEqual(DD, set())
+        self.assertEqual(AD, set())
+        I().include.assert_has_calls([
+            mock.call(set(['syncme2', 'ignoreme2', 'syncme'])),
+            mock.call(set(['ignoreme', 'deleteme'])),
+        ])
+
 
     def test_trackBranch(self):
         self.exp.trackBranch('repo', self.Git, 'b1', set(('remotes/origin/b1',)))

@@ -145,6 +145,23 @@ of .gitignore and .cvsignore, including non-root locations. Do
 not depend on Bigitr to delete ignored content through any
 mechanism.)
 
+Filenames starting with `.bigitr` are reserved to control Bigitr's
+actions more finely and Bigitr is allowed to synchronize or not
+synchronize them in either direction, as defined by features that
+make use of such files.
+
+If a .bigitrsync file exists in the root directory of a CVS module
+to which a Git repository is being exported, it defines a set of
+regular expressions (**not** globs) which together define the only
+paths to synchronize.  File paths from Git (complete paths relative
+to the repository root) which do not match any of those regular
+expressions will not be pushed to CVS, and file paths in CVS
+which do not match any of those regular expressions will not be
+deleted from CVS.
+
+The corresponding change for a .bigitrsync file in a Git repository
+may be implemented in the future.
+
 Whenever Bigitr chooses not to delete a file when syncing to a target
 location, the stderr log for the operation will list the file name and
 all ignore lines that would prevent it from being deleted.
@@ -158,7 +175,7 @@ Bigitr tries to notice entirely empty branches and should refuse to
 delete entire CVS `sub/modules`.  An attempt to export an empty Git
 branch to a CVS branch will raise an exception rather than deleting
 all the files on the CVS branch.  However, even a single file is
-enough to override this security check.)  (If you really want to
+enough to override this security check.  (If you really want to
 delete all the files on the CVS branch, do it using CVS directly.)
 
 It is recommended that only Git metadata files with names starting
@@ -681,8 +698,8 @@ The documentation is maintained in markdown.
 Status
 ======
 
-As of this writing, Bigitr is considered alpha-quality software.
-It has been tested with a few dozen CVS/Git repository pairs.
+As of this writing, Bigitr is considered production-quality software.
+It has been tested with hundreds of CVS/Git repository pairs.
 It is in active production use with close monitoring.  It is
 actively maintained.
 
@@ -766,4 +783,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Copyright 2012-2013 SAS Institute
+Copyright 2012-2015 SAS Institute

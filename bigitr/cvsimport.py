@@ -58,10 +58,16 @@ class Importer(object):
         os.chdir(os.path.dirname(exportDir))
         CVS.export(os.path.basename(exportDir))
         cvsignore = ignore.Ignore(Git.log, exportDir + '/.cvsignore')
+        # Awaiting use case requiring partial import into Git before
+        # writing test cases to implement it for import from CVS into Git
+        # bigitrsync = ignore.Ignore(Git.log, gitDir + '/.bigitrsync', regex=True)
         exportedFiles = util.listFiles(exportDir)
         if not exportedFiles:
             raise RuntimeError("CVS branch '%s' for location '%s' contains no files"
                                %(CVS.branch, CVS.location))
+        # Sync only explicitly requested files
+        # exportedFiles = sorted(list(bigitrsync.include(exportedFiles)))
+
         os.chdir(exportDir)
 
         Git.initializeGitRepository()
@@ -88,7 +94,10 @@ class Importer(object):
         Git.pristine()
 
         gitFiles = Git.listContentFiles()
-        gitFiles = sorted(list(cvsignore.filter(set(gitFiles))))
+        gitFiles = cvsignore.filter(set(gitFiles))
+        gitFiles.discard('.bigitrsync')
+        # delete only files matching the sync expressions
+        # gitFiles = sorted(list(bigitrsync.include(gitFiles)))
         for filename in gitFiles:
             os.remove(filename)
 
