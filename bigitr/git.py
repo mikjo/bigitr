@@ -16,6 +16,7 @@
 
 import os
 import shell
+import shlex
 
 from bigitr import util
 
@@ -142,8 +143,13 @@ class Git(object):
             ':'.join((localbranch, remotebranch)))
 
     def logmessages(self, since, until):
-        _, messages = shell.read(self.log,
-            'git', 'log', '%s..%s' %(since, until))
+        options = self.ctx.getGitLogOptions(self.repo, until)
+        if options is None:
+            options = []
+        else:
+            options = shlex.split(options)
+        options = ['git', 'log'] + options + ['%s..%s' %(since, until)]
+        _, messages = shell.read(self.log, *options)
         return messages
 
     def initializeGitRepository(self, create=True):

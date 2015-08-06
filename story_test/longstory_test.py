@@ -85,6 +85,7 @@ class WorkDir(unittest.TestCase):
                               'cvs.b2 = b2\n'
                               'git.master = b2\n'
                               'git.b1 = b1\n'
+                              'gitlog.master = --stat=500\n'
                               'prefix.b1 = SOME FIXED STRING\n'
                               '[git/module2]\n'
                               'cvspath = module2\n'
@@ -495,10 +496,10 @@ class TestStoryAPI(WorkDir):
                   'git push --all; '
                   %self.gitco)
         exp.exportgit('git/module1', Git, CVSb2, 'master', 'export-master')
-        self.assertFalse('SOME FIXED STRING' in
-                        file(self.cvsroot+'/module1/Attic/added-on-git-master,v').read())
-        self.assertTrue('    add added-on-git-master' in
-                        file(self.cvsroot+'/module1/Attic/added-on-git-master,v').read())
+        txt = file(self.cvsroot+'/module1/Attic/added-on-git-master,v').read()
+        self.assertFalse('SOME FIXED STRING' in txt)
+        self.assertTrue('    add added-on-git-master' in txt)
+        self.assertTrue('added-on-git-master | 0' in txt)
         imp.importcvs('git/module1', Git, CVSb2, 'b2', 'cvs-b2')
         os.system('cd %s/module1; '
                   'git fetch; '

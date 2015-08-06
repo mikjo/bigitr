@@ -330,6 +330,15 @@ fe9a5fbf7fe7ca3f6f08946187e2d1ce302c0201 refs/remotes/origin/master
                 'git', 'log', 'since..until')
             self.assertEqual(msg, 'a message\n')
 
+    @mock.patch('bigitr.git.shell.read')
+    def test_logmessagesArgs(self, r):
+        r.return_value = (0, 'a message\n')
+        self.ctx._rm.set('repo', 'gitlog.until', '--stat=500 --test')
+        msg = self.git.logmessages('since', 'until')
+        shell.read.assert_called_once_with(mock.ANY,
+            'git', 'log', '--stat=500', '--test', 'since..until')
+        self.assertEqual(msg, 'a message\n')
+
     def test_initializeGitRepositoryWithCreateNoSkel(self):
         foo = []
         def inner():

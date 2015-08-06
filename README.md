@@ -339,6 +339,7 @@ sections in that file.
     prefix.<branch> = <message> # prefix for CVS commit messages on <branch>
     email = <address> <address> # errors/warnings emailed to these addresses
     cvsvar.<variable> = <value> # for CVS, use -s <variable>=<value>
+    gitlog.<branch> = <args>    # additional git log arguments for CVS commit messages
 
     prehook.git = <command> <args> # hook to run in Git clone before committing to either Git or CVS
     prehook.imp.git = <command> <args> # hook to run in Git clone before committing to Git from CVS
@@ -369,8 +370,8 @@ The `gitroot`, `cvsroot`, `email`, `skeleton` keys, and general
 (non-branch-specific) hooks, may be in the `GLOBAL` section. Entries
 in the `GLOBAL` section will be overridden by any specific
 per-repository values.  The `branchfrom` and all branch-specific
-keys (`cvs.*`, `git.*`, `merge.*`, and `prefix.*`) must be specified
-only in specific repository sections.
+keys (`cvs.*`, `git.*`, `merge.*`, `prefix.*`, and `gitlog.*`)
+must be specified only in specific repository sections.
 
 Each repository is specified by the path relative to the `gitroot`
 and the *basename* must be unique for all repositories that share

@@ -72,6 +72,10 @@ class RepositoryConfig(config.Config):
         optname = 'prefix.'+branch
         return self.getOptional(repository, optname)
 
+    def getGitLogOptions(self, repository, branch):
+        optname = 'gitlog.'+branch
+        return self.getOptional(repository, optname)
+
     def getImportBranchMaps(self, repository):
         'return: [(cvsbranch, gitbranch), ...]'
         return [(x[4:], 'cvs-' + self.get(repository, x))

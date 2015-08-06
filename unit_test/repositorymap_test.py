@@ -43,6 +43,7 @@ cvs.a2 = a2
 git.master = a2
 git.a1 = a1
 prefix.a2 = cvs-a2-prefix
+gitlog.a2 = --stat=500
 cvsvar.V = override
 cvsvar.V2 = v2
 merge.cvs-a2 = a2 master
@@ -146,6 +147,14 @@ prehook.cvs.cvs-a2 = cvsa2prehook "quoted arg"
 
     def test_getBranchPrefixDefault(self):
         self.assertEqual(self.cfg.getBranchPrefix('Path/To/Git/repo2', 'a2'),
+                         None)
+
+    def test_getGitLogOptions(self):
+        self.assertEqual(self.cfg.getGitLogOptions('Path/To/Git/repository', 'a2'),
+                         '--stat=500')
+
+    def test_getGitLogOptionsDefault(self):
+        self.assertEqual(self.cfg.getGitLogOptions('Path/To/Git/repo2', 'a2'),
                          None)
 
     def test_getImportBranchMaps(self):
