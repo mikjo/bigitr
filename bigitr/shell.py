@@ -39,13 +39,19 @@ class LoggingShell(subprocess.Popen):
         self.log.markStart()
         self.p = subprocess.Popen.__init__(self, args, **kwargs)
 
+    def _tzname(self):
+        return time.tzname[time.daylight]
+
+    def _now(self):
+        return time.time()
+
     def timestamp(self):
-        now = time.time()
+        now = self._now()
         frac = '%4.4f' %(now - int(now))
-        loc = time.localtime
-        tzname = time.tzname[time.daylight]
-        return time.strftime('[%a %b %d %H:%m:%S.'
-                             + frac[2:] + ' ' + tzname + ' %Y]')
+        tzname = self._tzname()
+        return time.strftime('[%a %b %d %H:%M:%S.'
+                             + frac[2:] + ' ' + tzname + ' %Y]',
+                             time.localtime(now))
 
     def finish(self):
         retcode = subprocess.Popen.wait(self)

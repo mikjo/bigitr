@@ -44,6 +44,14 @@ logdir = %s
         logging.getLogger().removeHandler(self.handler)
         self.removeRecursive(self.logdir)
 
+    @mock.patch('subprocess.Popen')
+    def test_timestamp(self, P):
+        l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
+        s = shell.LoggingShell(l, 'ignoreme')
+        s._tzname = lambda: 'EDT'
+        s._now = lambda: 1454508561.227579
+        self.assertEqual(s.timestamp(), '[Wed Feb 03 09:09:21.2276 EDT 2016]')
+
     def test_Empty(self):
         l = log.Log(self.ctx, 'Path/To/Git/repo2', None)
         s = shell.LoggingShell(l, 'true')
